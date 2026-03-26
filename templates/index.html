@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockSense — Market Analyzer & Investment Guide</title>
+    <meta name="description" content="Free stock market analysis, trend prediction, and beginner investment guide using live market data.">
+    <meta property="og:title" content="StockSense — Market Analyzer & Investment Guide">
+    <meta property="og:description" content="Technical analysis, trend prediction, broker comparison & investment guide. 100% free.">
+    <meta property="og:type" content="website">
+    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{--bg:#06060b;--card:#0e0e16;--card2:#12121c;--border:#1a1a2a;--text:#ddd;--muted:#777;--green:#00c853;--red:#ff1744;--blue:#448aff;--gold:#ffd54f;--purple:#b388ff;--cyan:#00bcd4}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+
+        /* Nav */
+        nav{background:#0a0a12;border-bottom:1px solid var(--border);padding:0.8rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;position:sticky;top:0;z-index:100}
+        nav h1{font-size:1.3rem;letter-spacing:1px}
+        nav h1 span{color:var(--green)}
+        .nav-links{display:flex;gap:1rem;font-size:0.82rem}
+        .nav-links button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.82rem;padding:0.3rem 0.5rem;border-radius:4px}
+        .nav-links button:hover,.nav-links button.active{color:#fff;background:rgba(255,255,255,0.05)}
+        .search-bar{display:flex;gap:0.4rem;align-items:center}
+        .search-bar input{padding:0.45rem 0.8rem;border-radius:6px;border:1px solid var(--border);background:var(--card);color:#fff;font-size:0.9rem;width:180px;text-transform:uppercase}
+        .search-bar button{padding:0.45rem 1rem;border-radius:6px;border:none;background:var(--green);color:#000;font-weight:700;cursor:pointer;font-size:0.82rem}
+        .search-bar button:disabled{opacity:0.4}
+        .disclaimer{text-align:center;padding:0.35rem;background:#13110a;color:var(--gold);font-size:0.65rem;border-bottom:1px solid #2a2500}
+
+        /* Live indicator */
+        .live-bar{display:flex;align-items:center;justify-content:space-between;padding:0.3rem 2rem;background:#080810;border-bottom:1px solid var(--border);font-size:0.72rem}
+        .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+        .live-dot.closed{background:var(--red);animation:none}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+        .live-price{font-size:1.1rem;font-weight:700;margin:0 0.5rem}
+        .live-change{font-weight:600;font-size:0.85rem}
+        .live-meta{color:var(--muted)}
+        .refresh-badge{font-size:0.65rem;color:var(--muted);background:var(--card);padding:0.15rem 0.5rem;border-radius:4px;border:1px solid var(--border)}
+        .refresh-badge select{background:var(--card);color:var(--text);border:none;font-size:0.65rem;cursor:pointer}
+
+        .container{max-width:1500px;margin:0 auto;padding:1.25rem}
+
+        /* Shared */
+        .card{background:var(--card);border-radius:14px;border:1px solid var(--border);padding:1.25rem;margin-bottom:1.25rem}
+        .card h2{font-size:0.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:0.9rem}
+        .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+        .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem}
+        .hidden{display:none}
+
+        /* Tabs/Pages */
+        .page{display:none}.page.active{display:block}
+
+        /* Loading */
+        .loader-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:999;justify-content:center;align-items:center;flex-direction:column;gap:0.75rem}
+        .loader-wrap.show{display:flex}
+        .loader{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .load-text{color:var(--muted);font-size:0.85rem}
+
+        /* Market ticker tape */
+        .tape{background:#0a0a10;border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap;padding:0.4rem 0}
+        .tape-inner{display:inline-flex;gap:2rem;animation:scroll 60s linear infinite;padding-left:100%}
+        .tape-item{display:inline-flex;gap:0.4rem;font-size:0.75rem;align-items:center}
+        .tape-item .sym{color:#fff;font-weight:600}
+        .tape-item .price{color:var(--muted)}
+        .tape-item .chg{font-weight:600}
+        .tape-item .up{color:var(--green)}.tape-item .dn{color:var(--red)}
+        @keyframes scroll{to{transform:translateX(-100%)}}
+
+        /* Score gauge */
+        .score-row{display:grid;grid-template-columns:280px 1fr;gap:1.25rem;margin-bottom:1.25rem}
+        .gauge{text-align:center}
+        .gauge-score{font-size:2.8rem;font-weight:800;margin:0.4rem 0}
+        .gauge-outlook{font-size:1rem;font-weight:600}
+        .gauge-bar{width:100%;height:6px;background:linear-gradient(90deg,var(--red),var(--gold),var(--green));border-radius:3px;margin-top:0.75rem;position:relative}
+        .gauge-marker{position:absolute;top:-5px;width:14px;height:14px;background:#fff;border-radius:50%;transform:translateX(-50%);box-shadow:0 0 6px rgba(255,255,255,0.4)}
+        .gauge-labels{display:flex;justify-content:space-between;font-size:0.6rem;color:#555;margin-top:3px}
+        .pred-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:0.6rem}
+        .pred-item{background:var(--card2);padding:0.6rem;border-radius:8px}
+        .pred-label{font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+        .pred-value{font-size:1.05rem;font-weight:700;margin-top:0.15rem}
+        .up{color:var(--green)}.dn{color:var(--red)}
+
+        /* TradingView Chart */
+        .tv-chart{width:100%;height:420px;border-radius:8px;overflow:hidden;background:#0a0a10}
+        .chart-short{height:180px}
+
+        /* Chart.js containers */
+        .cjs-wrap{position:relative;width:100%;height:180px}
+
+        /* Fibonacci */
+        .fib-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0.4rem;margin-top:0.75rem}
+        .fib-item{text-align:center;padding:0.5rem 0.3rem;background:var(--card2);border-radius:6px;font-size:0.75rem}
+        .fib-level{font-size:0.6rem;color:var(--muted)}
+        .fib-price{font-weight:700;margin-top:2px}
+
+        /* Signals */
+        .signal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.5rem}
+        .signal{display:flex;gap:0.6rem;padding:0.6rem;background:var(--card2);border-radius:8px;align-items:flex-start}
+        .signal-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+        .signal-dot.bullish{background:var(--green)}.signal-dot.bearish{background:var(--red)}.signal-dot.neutral{background:var(--gold)}
+        .signal-name{font-weight:600;font-size:0.8rem}
+        .signal-desc{font-size:0.7rem;color:var(--muted);margin-top:1px}
+
+        /* Advice */
+        .advice-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:0.6rem}
+        .advice{padding:0.8rem;background:var(--card2);border-radius:10px;border-left:3px solid var(--blue)}
+        .advice.high{border-left-color:var(--green)}
+        .advice-title{font-weight:700;font-size:0.85rem;margin-bottom:0.25rem}
+        .advice-desc{font-size:0.75rem;color:var(--muted);line-height:1.5}
+
+        /* Tables */
+        .tbl{width:100%;border-collapse:collapse;font-size:0.8rem}
+        .tbl th{text-align:left;padding:0.5rem 0.6rem;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);cursor:pointer}
+        .tbl th:hover{color:#fff}
+        .tbl td{padding:0.4rem 0.6rem;border-bottom:1px solid #111}
+        .tbl tr:hover td{background:rgba(255,255,255,0.02)}
+        .tbl .r{text-align:right;font-variant-numeric:tabular-nums}
+
+        /* Broker cards */
+        .broker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:0.75rem}
+        .broker{background:var(--card2);border-radius:12px;padding:1rem;border:1px solid var(--border)}
+        .broker:hover{border-color:rgba(255,255,255,0.1)}
+        .broker-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem}
+        .broker-name{font-weight:700;font-size:1rem}
+        .broker-type{font-size:0.65rem;background:rgba(68,138,255,0.15);color:var(--blue);padding:0.15rem 0.5rem;border-radius:4px}
+        .broker-rating{color:var(--gold);font-size:0.85rem}
+        .broker-details{display:grid;grid-template-columns:1fr 1fr;gap:0.3rem 1rem;font-size:0.75rem;margin:0.5rem 0}
+        .broker-details dt{color:var(--muted)}
+        .broker-details dd{font-weight:600}
+        .broker-pro{color:var(--green);font-size:0.72rem;margin-top:0.4rem}
+        .broker-con{color:var(--red);font-size:0.72rem}
+        .broker-best{color:var(--cyan);font-size:0.72rem;margin-top:0.3rem;font-style:italic}
+
+        /* Screener */
+        .trend-badge{display:inline-block;padding:0.1rem 0.4rem;border-radius:4px;font-size:0.65rem;font-weight:600}
+        .trend-badge.bullish{background:rgba(0,200,83,0.15);color:var(--green)}
+        .trend-badge.bearish{background:rgba(255,23,68,0.15);color:var(--red)}
+        .trend-badge.neutral{background:rgba(255,213,79,0.15);color:var(--gold)}
+
+        /* Share banner */
+        .share-banner{background:linear-gradient(90deg,#0d1117,#161b22);border:1px solid var(--border);border-radius:12px;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.5rem}
+        .share-banner .url{background:var(--card);padding:0.4rem 0.8rem;border-radius:6px;font-family:monospace;font-size:0.82rem;color:var(--cyan);border:1px solid var(--border);flex:1;max-width:500px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .share-banner button{padding:0.45rem 1rem;border-radius:6px;border:none;background:var(--blue);color:#fff;font-weight:600;cursor:pointer;font-size:0.8rem}
+
+        /* Quick picks */
+        .quick-grid{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:1rem}
+        .qp{padding:0.35rem 0.75rem;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:0.78rem}
+        .qp:hover{border-color:var(--green);color:var(--green)}
+
+        /* Market overview grid */
+        .mkt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.5rem}
+        .mkt-item{background:var(--card2);padding:0.6rem 0.75rem;border-radius:8px}
+        .mkt-sym{font-weight:700;font-size:0.8rem}
+        .mkt-name{font-size:0.65rem;color:var(--muted)}
+        .mkt-price{font-size:0.95rem;font-weight:600;margin-top:0.15rem}
+        .mkt-chg{font-size:0.78rem;font-weight:600}
+
+        @media(max-width:900px){
+            .score-row,.grid-2,.grid-3{grid-template-columns:1fr}
+            nav{padding:0.6rem 1rem}
+            .container{padding:0.75rem}
+            .fib-grid{grid-template-columns:repeat(4,1fr)}
+            .tv-chart{height:300px}
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <h1>Stock<span>Sense</span></h1>
+    <div class="nav-links">
+        <button class="active" onclick="showPage('analyze')">Analyzer</button>
+        <button onclick="showPage('market')">Market Overview</button>
+        <button onclick="showPage('screener')">Stock Screener</button>
+        <button onclick="showPage('brokers')">Brokers</button>
+        <button onclick="showPage('learn')">Learn</button>
+    </div>
+    <div class="search-bar">
+        <input type="text" id="ticker" placeholder="Ticker..." value="^GSPC">
+        <button id="go-btn" onclick="runAnalysis()">Analyze</button>
+    </div>
+</nav>
+<div class="disclaimer">Educational tool only. Uses public data & standard technical analysis. Not financial advice — consult a professional before investing.</div>
+<div class="live-bar" id="live-bar" style="display:none">
+    <div style="display:flex;align-items:center">
+        <span class="live-dot" id="live-dot"></span>
+        <span id="live-status">Market Open</span>
+        <span class="live-price" id="live-price">—</span>
+        <span class="live-change" id="live-change">—</span>
+        <span class="live-meta" id="live-meta" style="margin-left:1rem">—</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:0.75rem">
+        <span class="live-meta" id="live-time">Last update: —</span>
+        <span class="refresh-badge">Auto-refresh:
+            <select id="refresh-interval" onchange="setRefreshInterval()">
+                <option value="0">Off</option>
+                <option value="15">15s</option>
+                <option value="30" selected>30s</option>
+                <option value="60">1m</option>
+                <option value="300">5m</option>
+            </select>
+        </span>
+    </div>
+</div>
+<div class="tape" id="tape"><div class="tape-inner" id="tape-inner"></div></div>
+
+<div class="loader-wrap" id="loading"><div class="loader"></div><div class="load-text" id="load-text">Loading...</div></div>
+
+<div class="container">
+    <!-- Share Banner (shown when tunnel is active) -->
+    <div class="share-banner hidden" id="share-banner">
+        <div>
+            <strong>Your dashboard is shareable!</strong>
+            <span style="color:var(--muted);font-size:0.75rem;margin-left:0.5rem">Send this link to anyone</span>
+        </div>
+        <div class="url" id="share-url"></div>
+        <button onclick="copyShareUrl()">Copy Link</button>
+    </div>
+
+    <!-- ═══ ANALYZE PAGE ═══ -->
+    <div class="page active" id="page-analyze">
+        <div class="quick-grid">
+            <button class="qp" onclick="go('^GSPC')">S&P 500</button>
+            <button class="qp" onclick="go('^DJI')">Dow Jones</button>
+            <button class="qp" onclick="go('^IXIC')">Nasdaq</button>
+            <button class="qp" onclick="go('^RUT')">Russell 2000</button>
+            <button class="qp" onclick="go('AAPL')">Apple</button>
+            <button class="qp" onclick="go('MSFT')">Microsoft</button>
+            <button class="qp" onclick="go('NVDA')">Nvidia</button>
+            <button class="qp" onclick="go('GOOGL')">Google</button>
+            <button class="qp" onclick="go('AMZN')">Amazon</button>
+            <button class="qp" onclick="go('META')">Meta</button>
+            <button class="qp" onclick="go('TSLA')">Tesla</button>
+            <button class="qp" onclick="go('BTC-USD')">Bitcoin</button>
+            <button class="qp" onclick="go('ETH-USD')">Ethereum</button>
+            <button class="qp" onclick="go('GC=F')">Gold</button>
+            <button class="qp" onclick="go('VOO')">VOO</button>
+            <button class="qp" onclick="go('QQQ')">QQQ</button>
+        </div>
+        <div id="results"></div>
+    </div>
+
+    <!-- ═══ MARKET PAGE ═══ -->
+    <div class="page" id="page-market">
+        <div class="card"><h2>Market Overview — Live Prices</h2><div id="market-data" class="mkt-grid"><div class="load-text">Click "Market Overview" to load...</div></div></div>
+    </div>
+
+    <!-- ═══ SCREENER PAGE ═══ -->
+    <div class="page" id="page-screener">
+        <div class="card"><h2>Stock Screener — 40+ Popular Stocks</h2><div id="screener-data"><div class="load-text">Loading screener...</div></div></div>
+    </div>
+
+    <!-- ═══ BROKERS PAGE ═══ -->
+    <div class="page" id="page-brokers">
+        <div class="card"><h2>Broker & Trading Platform Comparison (16 Brokers)</h2>
+        <p style="font-size:0.75rem;color:var(--muted);margin-bottom:1rem">Comprehensive comparison of every major US brokerage. All data verified as of 2025.</p>
+        <div id="broker-data" class="broker-grid"><div class="load-text">Loading...</div></div></div>
+    </div>
+
+    <!-- ═══ LEARN PAGE ═══ -->
+    <div class="page" id="page-learn">
+        <div class="card">
+            <h2>Investing 101 — Your Complete Beginner's Guide</h2>
+            <div class="advice-grid" id="learn-content"></div>
+        </div>
+        <div class="card">
+            <h2>Recommended ETFs for Beginners</h2>
+            <div id="etf-table"><div class="load-text">Loading ETF data...</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── State ──
+let tvChart = null, tvSeries = null, tvVolSeries = null;
+let cjsCharts = {};
+let marketLoaded = false, screenerLoaded = false, brokersLoaded = false, learnLoaded = false;
+
+// ── Navigation ──
+function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    if (name === 'market' && !marketLoaded) loadMarket();
+    if (name === 'screener' && !screenerLoaded) loadScreener();
+    if (name === 'brokers' && !brokersLoaded) loadBrokers();
+    if (name === 'learn' && !learnLoaded) loadLearn();
+}
+
+// ── Helpers ──
+function go(t) { document.getElementById('ticker').value = t; runAnalysis(); }
+function showLoad(msg) { document.getElementById('load-text').textContent = msg; document.getElementById('loading').classList.add('show'); }
+function hideLoad() { document.getElementById('loading').classList.remove('show'); }
+
+function copyShareUrl() {
+    navigator.clipboard.writeText(document.getElementById('share-url').textContent);
+    event.target.textContent = 'Copied!';
+    setTimeout(() => event.target.textContent = 'Copy Link', 2000);
+}
+
+// ── Market Tape ──
+async function loadTape() {
+    try {
+        const r = await fetch('/api/market');
+        const d = await r.json();
+        const tape = document.getElementById('tape-inner');
+        tape.innerHTML = d.slice(0, 20).map(i => {
+            const cls = i.change_pct >= 0 ? 'up' : 'dn';
+            const sign = i.change_pct >= 0 ? '+' : '';
+            return `<span class="tape-item"><span class="sym">${i.name}</span><span class="price">$${i.price.toLocaleString()}</span><span class="chg ${cls}">${sign}${i.change_pct}%</span></span>`;
+        }).join('') + d.slice(0, 20).map(i => {
+            const cls = i.change_pct >= 0 ? 'up' : 'dn';
+            const sign = i.change_pct >= 0 ? '+' : '';
+            return `<span class="tape-item"><span class="sym">${i.name}</span><span class="price">$${i.price.toLocaleString()}</span><span class="chg ${cls}">${sign}${i.change_pct}%</span></span>`;
+        }).join('');
+    } catch(e) { console.error('Tape failed:', e); }
+}
+
+// ── Analyze ──
+async function runAnalysis() {
+    const ticker = document.getElementById('ticker').value.trim().toUpperCase();
+    if (!ticker) return;
+    showLoad('Analyzing ' + ticker + '...');
+    document.getElementById('go-btn').disabled = true;
+    try {
+        const r = await fetch(`/api/analyze?ticker=${encodeURIComponent(ticker)}`);
+        const d = await r.json();
+        if (d.error) { alert(d.error); return; }
+        showPage_direct('analyze');
+        renderAnalysis(d);
+    } catch(e) { alert('Error: ' + e.message); }
+    finally { document.getElementById('go-btn').disabled = false; hideLoad(); }
+}
+
+function showPage_direct(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    document.querySelectorAll('.nav-links button').forEach(b => {
+        b.classList.toggle('active', b.textContent.toLowerCase().includes(name.slice(0,4)));
+    });
+}
+
+function renderAnalysis(data) {
+    const {ticker, name, signals, prediction: p, advice, chart} = data;
+    const res = document.getElementById('results');
+    Object.values(cjsCharts).forEach(c => c.destroy()); cjsCharts = {};
+
+    const scorePct = (p.score + 100) / 200 * 100;
+    let html = '';
+
+    // Score + Prediction
+    html += `<div class="score-row">
+        <div class="card gauge">
+            <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px">Technical Score</div>
+            <div class="gauge-score" style="color:${p.color}">${p.score > 0 ? '+' : ''}${p.score}</div>
+            <div class="gauge-outlook" style="color:${p.color}">${p.outlook}</div>
+            <div class="gauge-bar"><div class="gauge-marker" style="left:${scorePct}%"></div></div>
+            <div class="gauge-labels"><span>Bearish</span><span>Neutral</span><span>Bullish</span></div>
+        </div>
+        <div class="card">
+            <h2>${name} (${ticker})</h2>
+            <div class="pred-grid">
+                <div class="pred-item"><div class="pred-label">Price</div><div class="pred-value">$${p.price.toLocaleString()}</div></div>
+                <div class="pred-item"><div class="pred-label">52W High</div><div class="pred-value">$${p.high_52w.toLocaleString()}</div></div>
+                <div class="pred-item"><div class="pred-label">52W Low</div><div class="pred-value">$${p.low_52w.toLocaleString()}</div></div>
+                <div class="pred-item"><div class="pred-label">Support</div><div class="pred-value">$${p.support.toLocaleString()}</div></div>
+                <div class="pred-item"><div class="pred-label">Resistance</div><div class="pred-value">$${p.resistance.toLocaleString()}</div></div>
+                <div class="pred-item"><div class="pred-label">Bull Target</div><div class="pred-value up">$${p.bull_target.toLocaleString()}</div></div>
+                <div class="pred-item"><div class="pred-label">Bear Target</div><div class="pred-value dn">$${p.bear_target.toLocaleString()}</div></div>
+                <div class="pred-item"><div class="pred-label">ATR (14)</div><div class="pred-value">${p.atr}</div></div>
+                <div class="pred-item"><div class="pred-label">5D Return</div><div class="pred-value ${p.r5>=0?'up':'dn'}">${p.r5>=0?'+':''}${p.r5}%</div></div>
+                <div class="pred-item"><div class="pred-label">20D Return</div><div class="pred-value ${p.r20>=0?'up':'dn'}">${p.r20>=0?'+':''}${p.r20}%</div></div>
+                <div class="pred-item"><div class="pred-label">60D Return</div><div class="pred-value ${p.r60>=0?'up':'dn'}">${p.r60>=0?'+':''}${p.r60}%</div></div>
+                <div class="pred-item"><div class="pred-label">Annual Vol</div><div class="pred-value">${p.annual_vol}%</div></div>
+            </div>
+            <div style="margin-top:0.75rem"><div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.4rem">Fibonacci Retracement</div>
+            <div class="fib-grid">${Object.entries(p.fibonacci).map(([k,v])=>`<div class="fib-item"><div class="fib-level">${k}</div><div class="fib-price">$${v.toLocaleString()}</div></div>`).join('')}</div></div>
+        </div>
+    </div>`;
+
+    // Main candlestick chart
+    html += `<div class="card"><h2>Price Chart — Candlestick with Moving Averages & Bollinger Bands</h2><div class="tv-chart" id="tv-main"></div></div>`;
+
+    // Indicator charts
+    html += `<div class="grid-2">
+        <div class="card"><h2>RSI (14)</h2><div class="cjs-wrap"><canvas id="rsiC"></canvas></div></div>
+        <div class="card"><h2>MACD (12, 26, 9)</h2><div class="cjs-wrap"><canvas id="macdC"></canvas></div></div>
+    </div>`;
+    html += `<div class="grid-2">
+        <div class="card"><h2>Stochastic (14, 3)</h2><div class="cjs-wrap"><canvas id="stochC"></canvas></div></div>
+        <div class="card"><h2>ATR (14) — Volatility</h2><div class="cjs-wrap"><canvas id="atrC"></canvas></div></div>
+    </div>`;
+
+    // Signals
+    html += `<div class="card"><h2>Technical Signals (${signals.length})</h2><div class="signal-grid">${signals.map(s=>`<div class="signal"><div class="signal-dot ${s.type}"></div><div><div class="signal-name">${s.name}</div><div class="signal-desc">${s.desc}</div></div></div>`).join('')}</div></div>`;
+
+    // Advice
+    html += `<div class="card"><h2>Investment Guide</h2><div class="advice-grid">${advice.map(a=>`<div class="advice ${a.priority}"><div class="advice-title">${a.title}</div><div class="advice-desc">${a.desc}</div></div>`).join('')}</div></div>`;
+
+    res.innerHTML = html;
+
+    // ── TradingView Chart ──
+    const container = document.getElementById('tv-main');
+    if (tvChart) { tvChart.remove(); tvChart = null; }
+    tvChart = LightweightCharts.createChart(container, {
+        layout: { background: { color: '#0a0a10' }, textColor: '#888' },
+        grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
+        crosshair: { mode: 0 },
+        timeScale: { borderColor: '#1a1a2a', timeVisible: false },
+        rightPriceScale: { borderColor: '#1a1a2a' },
+    });
+    tvSeries = tvChart.addCandlestickSeries({
+        upColor: '#26a69a', downColor: '#ef5350',
+        borderDownColor: '#ef5350', borderUpColor: '#26a69a',
+        wickDownColor: '#ef5350', wickUpColor: '#26a69a',
+    });
+    tvSeries.setData(chart.candles);
+
+    // SMA overlays
+    const addLine = (data, dates, color, width=1) => {
+        const s = tvChart.addLineSeries({ color, lineWidth: width, crosshairMarkerVisible: false, priceLineVisible: false, lastValueVisible: false });
+        s.setData(data.map((v,i) => v != null ? {time: dates[i], value: v} : null).filter(Boolean));
+    };
+    addLine(chart.sma20, chart.dates, '#448aff', 1);
+    addLine(chart.sma50, chart.dates, '#ffd54f', 1);
+    addLine(chart.sma200, chart.dates, '#ff8a65', 1);
+    addLine(chart.bb_upper, chart.dates, 'rgba(179,136,255,0.4)', 1);
+    addLine(chart.bb_lower, chart.dates, 'rgba(179,136,255,0.4)', 1);
+
+    // Volume
+    tvVolSeries = tvChart.addHistogramSeries({
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'vol',
+    });
+    tvChart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+    tvVolSeries.setData(chart.volume);
+    tvChart.timeScale().fitContent();
+
+    // ── Chart.js indicators ──
+    const cOpts = {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { labels: { color: '#666', font: { size: 9 } } } },
+        scales: {
+            x: { ticks: { color: '#444', maxTicksLimit: 10, font: { size: 8 } }, grid: { color: '#111' } },
+            y: { ticks: { color: '#666', font: { size: 9 } }, grid: { color: '#111' } }
+        }
+    };
+
+    // RSI
+    cjsCharts.rsi = new Chart(document.getElementById('rsiC'), {
+        type: 'line', data: { labels: chart.dates,
+            datasets: [{ label: 'RSI', data: chart.rsi, borderColor: '#b388ff', borderWidth: 1.5, pointRadius: 0, fill: false }]
+        },
+        options: { ...cOpts, scales: { ...cOpts.scales, y: { ...cOpts.scales.y, min: 0, max: 100 } },
+            plugins: { ...cOpts.plugins, annotation: { annotations: {
+                ob: { type:'line',yMin:70,yMax:70,borderColor:'rgba(255,23,68,0.3)',borderWidth:1,borderDash:[4,4] },
+                os: { type:'line',yMin:30,yMax:30,borderColor:'rgba(0,200,83,0.3)',borderWidth:1,borderDash:[4,4] },
+                mid: { type:'line',yMin:50,yMax:50,borderColor:'rgba(255,255,255,0.07)',borderWidth:1 },
+            }}}
+        }
+    });
+
+    // MACD
+    const mColors = chart.macd_hist.map(v => v >= 0 ? 'rgba(38,166,154,0.6)' : 'rgba(239,83,80,0.6)');
+    cjsCharts.macd = new Chart(document.getElementById('macdC'), {
+        type: 'bar', data: { labels: chart.dates, datasets: [
+            { label: 'Hist', data: chart.macd_hist, backgroundColor: mColors, borderWidth: 0, order: 2 },
+            { label: 'MACD', data: chart.macd, borderColor: '#448aff', borderWidth: 1.5, pointRadius: 0, type: 'line', fill: false, order: 1 },
+            { label: 'Signal', data: chart.macd_signal, borderColor: '#ff8a65', borderWidth: 1, pointRadius: 0, type: 'line', fill: false, order: 1 },
+        ]},
+        options: cOpts
+    });
+
+    // Stochastic
+    cjsCharts.stoch = new Chart(document.getElementById('stochC'), {
+        type: 'line', data: { labels: chart.dates, datasets: [
+            { label: '%K', data: chart.stoch_k, borderColor: '#448aff', borderWidth: 1.5, pointRadius: 0, fill: false },
+            { label: '%D', data: chart.stoch_d, borderColor: '#ff8a65', borderWidth: 1, pointRadius: 0, fill: false },
+        ]},
+        options: { ...cOpts, scales: { ...cOpts.scales, y: { ...cOpts.scales.y, min: 0, max: 100 } },
+            plugins: { ...cOpts.plugins, annotation: { annotations: {
+                ob: { type:'line',yMin:80,yMax:80,borderColor:'rgba(255,23,68,0.3)',borderWidth:1,borderDash:[4,4] },
+                os: { type:'line',yMin:20,yMax:20,borderColor:'rgba(0,200,83,0.3)',borderWidth:1,borderDash:[4,4] },
+            }}}
+        }
+    });
+
+    // ATR
+    cjsCharts.atr = new Chart(document.getElementById('atrC'), {
+        type: 'line', data: { labels: chart.dates, datasets: [
+            { label: 'ATR', data: chart.atr, borderColor: '#00bcd4', borderWidth: 1.5, pointRadius: 0, fill: true, backgroundColor: 'rgba(0,188,212,0.05)' },
+        ]},
+        options: cOpts
+    });
+}
+
+// ── Market Overview ──
+async function loadMarket() {
+    showLoad('Loading market data...');
+    try {
+        const r = await fetch('/api/market');
+        const d = await r.json();
+        const el = document.getElementById('market-data');
+
+        // Group by type
+        const indices = d.filter(i => i.symbol.startsWith('^'));
+        const sectors = d.filter(i => i.symbol.startsWith('XL') || i.symbol === 'XLRE');
+        const other = d.filter(i => !i.symbol.startsWith('^') && !i.symbol.startsWith('XL') && i.symbol !== 'XLRE');
+
+        let html = '<div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.5rem;grid-column:1/-1">Major Indices</div>';
+        html += indices.map(mkItem).join('');
+        html += '<div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0.75rem 0 0.5rem;grid-column:1/-1">Sector ETFs</div>';
+        html += sectors.map(mkItem).join('');
+        html += '<div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0.75rem 0 0.5rem;grid-column:1/-1">Commodities, Crypto & Bonds</div>';
+        html += other.map(mkItem).join('');
+
+        el.innerHTML = html;
+        marketLoaded = true;
+    } catch(e) { document.getElementById('market-data').innerHTML = 'Failed to load.'; }
+    hideLoad();
+}
+
+function mkItem(i) {
+    const cls = i.change_pct >= 0 ? 'up' : 'dn';
+    const sign = i.change_pct >= 0 ? '+' : '';
+    return `<div class="mkt-item" style="cursor:pointer" onclick="go('${i.symbol}')">
+        <div class="mkt-sym">${i.symbol} <span class="mkt-name">${i.name}</span></div>
+        <div class="mkt-price">$${i.price.toLocaleString()}</div>
+        <div class="mkt-chg ${cls}">${sign}${i.change} (${sign}${i.change_pct}%)</div>
+    </div>`;
+}
+
+// ── Screener ──
+async function loadScreener() {
+    showLoad('Screening 40+ stocks...');
+    try {
+        const r = await fetch('/api/screener');
+        const d = await r.json();
+        let html = `<table class="tbl"><thead><tr>
+            <th>Symbol</th><th class="r">Price</th><th class="r">1M Return</th><th class="r">3M Return</th>
+            <th class="r">Volatility</th><th class="r">RSI</th><th>Trend</th>
+        </tr></thead><tbody>`;
+        for (const s of d) {
+            html += `<tr style="cursor:pointer" onclick="go('${s.symbol}')">
+                <td><strong>${s.symbol}</strong></td>
+                <td class="r">$${s.price.toLocaleString()}</td>
+                <td class="r" style="color:${s.r1m>=0?'var(--green)':'var(--red)'}">${s.r1m>=0?'+':''}${s.r1m}%</td>
+                <td class="r" style="color:${s.r3m>=0?'var(--green)':'var(--red)'}">${s.r3m>=0?'+':''}${s.r3m}%</td>
+                <td class="r">${s.vol}%</td>
+                <td class="r" style="color:${s.rsi>70?'var(--red)':s.rsi<30?'var(--green)':'var(--muted)'}">${s.rsi}</td>
+                <td><span class="trend-badge ${s.trend}">${s.trend}</span></td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        document.getElementById('screener-data').innerHTML = html;
+        screenerLoaded = true;
+    } catch(e) { document.getElementById('screener-data').innerHTML = 'Failed to load.'; }
+    hideLoad();
+}
+
+// ── Brokers ──
+async function loadBrokers() {
+    showLoad('Loading broker data...');
+    try {
+        const r = await fetch('/api/brokers');
+        const d = await r.json();
+        const el = document.getElementById('broker-data');
+        el.innerHTML = d.map(b => `<div class="broker">
+            <div class="broker-top">
+                <div><span class="broker-name">${b.name}</span> <span class="broker-type">${b.type}</span></div>
+                <div class="broker-rating">${'★'.repeat(Math.round(b.rating))} ${b.rating}</div>
+            </div>
+            <dl class="broker-details">
+                <dt>Stocks/ETFs</dt><dd>${b.commission}</dd>
+                <dt>Options</dt><dd>${b.options}</dd>
+                <dt>Minimum</dt><dd>${b.min}</dd>
+                <dt>Fractional</dt><dd>${b.fractional ? '✓ Yes' : '✗ No'}</dd>
+                <dt>Crypto</dt><dd>${b.crypto ? '✓ Yes' : '✗ No'}</dd>
+            </dl>
+            <div class="broker-pro">✓ ${b.pros}</div>
+            <div class="broker-con">✗ ${b.cons}</div>
+            <div class="broker-best">Best for: ${b.best_for}</div>
+        </div>`).join('');
+        brokersLoaded = true;
+    } catch(e) { document.getElementById('broker-data').innerHTML = 'Failed.'; }
+    hideLoad();
+}
+
+// ── Learn ──
+async function loadLearn() {
+    const tips = [
+        {t:'What is the Stock Market?',d:'A marketplace where shares of public companies are bought and sold. When you buy a stock, you own a tiny piece of that company. The S&P 500 tracks the 500 largest US companies and has returned ~10% annually since 1926.',p:'high'},
+        {t:'Stocks vs ETFs vs Mutual Funds',d:'<b>Stocks:</b> Individual company shares. High reward, high risk. <b>ETFs:</b> Baskets of stocks that trade like stocks. Instant diversification. <b>Mutual funds:</b> Like ETFs but trade once/day, often higher fees. For beginners: start with ETFs.',p:'high'},
+        {t:'Dollar-Cost Averaging (DCA)',d:'Invest a fixed amount on a regular schedule regardless of price. Example: $200 every Friday into VOO. You buy more shares when prices are low, fewer when high. Removes emotion and timing from investing.',p:'high'},
+        {t:'The Power of Compound Interest',d:'$500/month invested at 10% annual return: After 10 years = $102,000. After 20 years = $380,000. After 30 years = $1,130,000. Starting early is the single biggest advantage you can have.',p:'high'},
+        {t:'Risk Tolerance',d:'How much loss can you stomach without panic-selling? Conservative: 40% stocks / 60% bonds. Moderate: 70/30. Aggressive: 90/10. If you\'re under 30, you can afford to be aggressive — time heals drawdowns.',p:'medium'},
+        {t:'Tax-Advantaged Accounts',d:'<b>Roth IRA:</b> $7,000/yr limit. Contributions are after-tax but growth + withdrawals are TAX-FREE. <b>401k:</b> $23,500/yr limit. Pre-tax contributions, employer match = free money. Always max your match first.',p:'high'},
+        {t:'Understanding P/E Ratio',d:'Price-to-Earnings ratio. A stock at $100 earning $5/share has P/E of 20. Lower = potentially cheaper. S&P 500 average is ~20-25. Tech stocks often 30-50+. Compare within the same sector.',p:'medium'},
+        {t:'What is a Dividend?',d:'Cash payments companies make to shareholders, usually quarterly. Dividend yield = annual dividend / stock price. Great dividend ETFs: SCHD (~3.5% yield), VIG (dividend growth). Reinvest dividends for compounding.',p:'medium'},
+        {t:'Market Corrections are Normal',d:'10%+ drops happen every 1-2 years. 20%+ bear markets happen every 5-7 years. Every single one has been followed by recovery and new highs. The worst thing you can do is sell during a crash.',p:'high'},
+        {t:'Avoid These Common Mistakes',d:'1. Trying to time the market. 2. Checking your portfolio daily. 3. Panic selling during dips. 4. Following social media "hot tips." 5. Not diversifying. 6. Investing money you need short-term.',p:'medium'},
+        {t:'The 3-Fund Portfolio',d:'A simple, proven strategy: VTI (US stocks, 60%) + VXUS (international stocks, 30%) + BND (bonds, 10%). Adjust bonds up as you age. This beats 90% of professional fund managers over 20+ years.',p:'high'},
+        {t:'When to Sell',d:'Buy and hold works. Only sell when: 1. You need the money. 2. Your thesis has fundamentally changed. 3. Rebalancing your allocation. NOT because: the market dipped, a talking head was scary, or you\'re bored.',p:'medium'},
+    ];
+    document.getElementById('learn-content').innerHTML = tips.map(t => `<div class="advice ${t.p}"><div class="advice-title">${t.t}</div><div class="advice-desc">${t.d}</div></div>`).join('');
+
+    // ETFs
+    try {
+        const r = await fetch('/api/etfs');
+        const d = await r.json();
+        let html = `<table class="tbl"><thead><tr>
+            <th>ETF</th><th>Category</th><th class="r">Price</th><th class="r">1Y Return</th><th class="r">Volatility</th><th class="r">Sharpe</th><th class="r">Expense</th><th class="r">Yield</th>
+        </tr></thead><tbody>`;
+        for (const e of d) {
+            const rc = e.return_1y >= 0 ? 'var(--green)' : 'var(--red)';
+            html += `<tr style="cursor:pointer" onclick="showPage_direct('analyze');go('${e.symbol}')">
+                <td><strong>${e.symbol}</strong></td><td>${e.label}</td>
+                <td class="r">$${e.price.toLocaleString()}</td>
+                <td class="r" style="color:${rc}">${e.return_1y>=0?'+':''}${e.return_1y}%</td>
+                <td class="r">${e.volatility}%</td>
+                <td class="r">${e.sharpe}</td>
+                <td class="r">${typeof e.expense === 'number' ? (e.expense*100).toFixed(2)+'%' : e.expense}</td>
+                <td class="r">${typeof e.yield_pct === 'number' ? e.yield_pct+'%' : e.yield_pct}</td>
+            </tr>`;
+        }
+        html += '</tbody></table>';
+        document.getElementById('etf-table').innerHTML = html;
+    } catch(e) { document.getElementById('etf-table').innerHTML = 'Failed.'; }
+    learnLoaded = true;
+}
+
+// Enter key
+document.getElementById('ticker').addEventListener('keydown', e => { if (e.key === 'Enter') runAnalysis(); });
+
+// ── Live Refresh ──
+let currentTicker = null;
+let refreshTimer = null;
+let refreshSec = 30;
+
+function isMarketOpen() {
+    const now = new Date();
+    const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const day = et.getDay();
+    const h = et.getHours();
+    const m = et.getMinutes();
+    const mins = h * 60 + m;
+    return day >= 1 && day <= 5 && mins >= 570 && mins < 960; // 9:30 AM - 4:00 PM ET
+}
+
+function updateMarketStatus() {
+    const dot = document.getElementById('live-dot');
+    const status = document.getElementById('live-status');
+    if (isMarketOpen()) {
+        dot.classList.remove('closed');
+        status.textContent = 'Market Open';
+        status.style.color = 'var(--green)';
+    } else {
+        dot.classList.add('closed');
+        status.textContent = 'Market Closed';
+        status.style.color = 'var(--red)';
+    }
+}
+
+async function refreshLivePrice() {
+    if (!currentTicker) return;
+    try {
+        const r = await fetch(`/api/live?ticker=${encodeURIComponent(currentTicker)}`);
+        const d = await r.json();
+        if (d.error) return;
+
+        document.getElementById('live-price').textContent = '$' + d.price.toLocaleString();
+
+        const chgEl = document.getElementById('live-change');
+        const sign = d.change >= 0 ? '+' : '';
+        chgEl.textContent = `${sign}${d.change} (${sign}${d.change_pct}%)`;
+        chgEl.className = 'live-change ' + (d.change >= 0 ? 'up' : 'dn');
+
+        document.getElementById('live-meta').textContent = `H: $${d.high} L: $${d.low} Vol: ${(d.volume/1e6).toFixed(1)}M`;
+        document.getElementById('live-time').textContent = `Updated: ${d.time}`;
+        updateMarketStatus();
+
+        // Update the gauge score price too
+        const priceEl = document.querySelector('.pred-value');
+        if (priceEl && priceEl.textContent.startsWith('$')) {
+            priceEl.textContent = '$' + d.price.toLocaleString();
+        }
+    } catch(e) { console.error('Live refresh failed:', e); }
+}
+
+function setRefreshInterval() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshSec = parseInt(document.getElementById('refresh-interval').value);
+    if (refreshSec > 0) {
+        refreshTimer = setInterval(() => {
+            refreshLivePrice();
+            // Also refresh tape every 5 minutes
+            if (Date.now() % (300 * 1000) < refreshSec * 1000) loadTape();
+        }, refreshSec * 1000);
+    }
+}
+
+// Override runAnalysis to track ticker for live updates
+const _origRunAnalysis = runAnalysis;
+runAnalysis = async function() {
+    await _origRunAnalysis();
+    currentTicker = document.getElementById('ticker').value.trim().toUpperCase();
+    document.getElementById('live-bar').style.display = 'flex';
+    updateMarketStatus();
+    refreshLivePrice();
+    setRefreshInterval();
+};
+
+// Boot
+loadTape();
+setInterval(updateMarketStatus, 60000);
+
+// Auto-refresh tape every 2 minutes
+setInterval(loadTape, 120000);
+</script>
+</body>
+</html>
