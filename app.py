@@ -4,8 +4,28 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import json
+import threading
+import time as _time
 
 app = Flask(__name__)
+
+# ──────────────────────────────────────────────
+# Server-side Cache (avoid re-fetching same data)
+# ──────────────────────────────────────────────
+_cache = {}
+_cache_lock = threading.Lock()
+
+def cache_get(key, max_age=120):
+    with _cache_lock:
+        if key in _cache:
+            val, ts = _cache[key]
+            if _time.time() - ts < max_age:
+                return val
+    return None
+
+def cache_set(key, val):
+    with _cache_lock:
+        _cache[key] = (val, _time.time())
 
 # ──────────────────────────────────────────────
 # Technical Indicators
@@ -330,6 +350,8 @@ def analyze():
 @app.route('/api/market')
 def market_overview():
     """Fetch all major indices, sectors, and key assets."""
+    cached = cache_get('market', max_age=90)
+    if cached: return jsonify(cached)
     tickers = {
         # Major Indices
         '^GSPC': 'S&P 500', '^DJI': 'Dow Jones', '^IXIC': 'Nasdaq',
@@ -378,11 +400,14 @@ def market_overview():
                 except: continue
         except: continue
 
+    cache_set('market', results)
     return jsonify(results)
 
 
 @app.route('/api/etfs')
 def compare_etfs():
+    cached = cache_get('etfs', max_age=300)
+    if cached: return jsonify(cached)
     etfs = {
         'VOO':'S&P 500 (Vanguard)','SPY':'S&P 500 (SPDR)','IVV':'S&P 500 (iShares)',
         'QQQ':'Nasdaq 100','VTI':'US Total Market','VXUS':'International',
@@ -410,6 +435,7 @@ def compare_etfs():
                 'yield_pct': round(info.get('yield', 0) * 100, 2) if info.get('yield') else 'N/A',
             })
         except: continue
+    cache_set('etfs', results)
     return jsonify(results)
 
 
@@ -421,6 +447,8 @@ def brokers():
 @app.route('/api/screener')
 def screener():
     """Screen popular stocks with key metrics."""
+    cached = cache_get('screener', max_age=180)
+    if cached: return jsonify(cached)
     stocks = ['AAPL','MSFT','NVDA','GOOGL','AMZN','META','TSLA','BRK-B',
               'JPM','V','JNJ','WMT','PG','MA','HD','DIS','NFLX','PYPL',
               'AMD','CRM','INTC','CSCO','PEP','KO','MRK','ABT','COST',
@@ -451,6 +479,7 @@ def screener():
                 })
             except: continue
     except: pass
+    cache_set('screener', results)
     return jsonify(results)
 
 
