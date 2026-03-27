@@ -229,6 +229,9 @@
         <button onclick="showPage('learn')">Learn</button>
     </div>
     <div class="search-bar">
+        <select id="nav-picker" onchange="pickStock(this,'ticker')" style="padding:0.4rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:0.78rem;max-width:160px">
+            <option value="">Pick stock...</option>
+        </select>
         <input type="text" id="ticker" placeholder="Ticker..." value="^GSPC">
         <button id="go-btn" onclick="runAnalysis()">Analyze</button>
         <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">&#9790;</button>
@@ -296,6 +299,12 @@
 
     <!-- ═══ ANALYZE PAGE ═══ -->
     <div class="page active" id="page-analyze">
+        <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.6rem;flex-wrap:wrap">
+            <select id="analyze-picker" onchange="pickStock(this,'ticker')" style="padding:0.45rem 0.6rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:0.8rem;min-width:200px">
+                <option value="">— Pick a stock —</option>
+            </select>
+            <span style="font-size:0.72rem;color:var(--muted)">or type a ticker above, or click a quick pick:</span>
+        </div>
         <div class="quick-grid">
             <button class="qp" onclick="go('^GSPC')">S&P 500</button>
             <button class="qp" onclick="go('^DJI')">Dow Jones</button>
@@ -319,7 +328,22 @@
 
     <!-- ═══ MARKET PAGE ═══ -->
     <div class="page" id="page-market">
-        <div class="card"><h2>Market Overview — Live Prices</h2><div id="market-data" class="mkt-grid"><div class="load-text">Click "Market Overview" to load...</div></div></div>
+        <div class="card">
+            <h2>Market Overview — Live Prices (Indices, Sectors & 100 Stocks)</h2>
+            <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;align-items:center">
+                <input type="text" id="market-search" placeholder="Search ticker or name..." oninput="renderMarket()" style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:0.8rem;width:200px">
+                <select id="market-filter" onchange="renderMarket()" style="padding:0.4rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:0.75rem">
+                    <option value="all">All Categories</option>
+                    <option value="index">Indices</option>
+                    <option value="sector">Sectors</option>
+                    <option value="stock">Stocks (100)</option>
+                    <option value="commodity">Commodities</option>
+                    <option value="crypto">Crypto</option>
+                    <option value="bond">Bonds</option>
+                </select>
+            </div>
+            <div id="market-data" class="mkt-grid"><div class="load-text">Click "Market Overview" to load...</div></div>
+        </div>
     </div>
 
     <!-- ═══ SCREENER PAGE ═══ -->
@@ -328,8 +352,8 @@
             <h2>Stock Screener — 100 Stocks with 60-Day Analysis & Predictions</h2>
             <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem">Real past 60-day data + Monte Carlo simulation for next 60 days. Click any stock for details.</p>
             <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;align-items:center">
-                <input type="text" id="screener-search" placeholder="Filter stocks..." style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:#fff;font-size:0.8rem;width:180px">
-                <select id="screener-sort" style="padding:0.4rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:#fff;font-size:0.75rem">
+                <input type="text" id="screener-search" placeholder="Filter stocks..." style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:0.8rem;width:180px">
+                <select id="screener-sort" style="padding:0.4rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:0.75rem">
                     <option value="action">Sort: Action Rating</option>
                     <option value="prob_up">Probability Up</option>
                     <option value="expected_return">Expected Return</option>
@@ -339,7 +363,7 @@
                     <option value="sharpe">Sharpe Ratio</option>
                     <option value="symbol">Alphabetical</option>
                 </select>
-                <select id="screener-filter" style="padding:0.4rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:#fff;font-size:0.75rem">
+                <select id="screener-filter" style="padding:0.4rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:0.75rem">
                     <option value="all">All Stocks</option>
                     <option value="buy">Strong Buy / Buy Only</option>
                     <option value="hold">Hold</option>
@@ -354,9 +378,13 @@
             <h2>Investment Simulator — "What If I Invest $X?"</h2>
             <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
                 <span style="font-size:0.85rem">If I invest $</span>
-                <input type="number" id="sim-amount" value="1000" min="1" style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:#fff;font-size:0.9rem;width:120px">
+                <input type="number" id="sim-amount" value="1000" min="1" style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:0.9rem;width:120px">
                 <span style="font-size:0.85rem">in</span>
-                <input type="text" id="sim-ticker" placeholder="AAPL" value="AAPL" style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:#fff;font-size:0.9rem;width:100px;text-transform:uppercase">
+                <select id="sim-picker" onchange="pickStock(this,'sim-ticker')" style="padding:0.4rem 0.6rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:0.8rem">
+                    <option value="">— Pick —</option>
+                </select>
+                <span style="font-size:0.72rem;color:var(--muted)">or</span>
+                <input type="text" id="sim-ticker" placeholder="AAPL" value="AAPL" style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:0.9rem;width:100px;text-transform:uppercase">
                 <button onclick="runSimulation()" style="padding:0.5rem 1.2rem;border-radius:6px;border:none;background:var(--green);color:#000;font-weight:700;cursor:pointer;font-size:0.85rem">Simulate</button>
             </div>
             <div id="sim-results"></div>
@@ -388,6 +416,47 @@
 let tvChart = null, tvSeries = null, tvVolSeries = null;
 let cjsCharts = {};
 let marketLoaded = false, screenerLoaded = false, brokersLoaded = false, learnLoaded = false;
+
+// ── Stock Dropdown Data ──
+const STOCK_LIST = [
+    {sym:'^GSPC',name:'S&P 500'},{sym:'^DJI',name:'Dow Jones'},{sym:'^IXIC',name:'Nasdaq'},{sym:'^RUT',name:'Russell 2000'},
+    {sym:'AAPL',name:'Apple'},{sym:'MSFT',name:'Microsoft'},{sym:'GOOGL',name:'Alphabet'},{sym:'AMZN',name:'Amazon'},
+    {sym:'META',name:'Meta'},{sym:'NVDA',name:'Nvidia'},{sym:'TSLA',name:'Tesla'},{sym:'BRK-B',name:'Berkshire'},
+    {sym:'JPM',name:'JPMorgan'},{sym:'V',name:'Visa'},{sym:'JNJ',name:'J&J'},{sym:'WMT',name:'Walmart'},
+    {sym:'PG',name:'Procter & Gamble'},{sym:'MA',name:'Mastercard'},{sym:'UNH',name:'UnitedHealth'},{sym:'HD',name:'Home Depot'},
+    {sym:'DIS',name:'Disney'},{sym:'PYPL',name:'PayPal'},{sym:'BAC',name:'Bank of America'},{sym:'XOM',name:'ExxonMobil'},
+    {sym:'CVX',name:'Chevron'},{sym:'PFE',name:'Pfizer'},{sym:'KO',name:'Coca-Cola'},{sym:'PEP',name:'PepsiCo'},
+    {sym:'TMO',name:'Thermo Fisher'},{sym:'ABBV',name:'AbbVie'},{sym:'MRK',name:'Merck'},{sym:'COST',name:'Costco'},
+    {sym:'AVGO',name:'Broadcom'},{sym:'ACN',name:'Accenture'},{sym:'CSCO',name:'Cisco'},{sym:'MCD',name:"McDonald's"},
+    {sym:'ABT',name:'Abbott'},{sym:'DHR',name:'Danaher'},{sym:'WFC',name:'Wells Fargo'},{sym:'NFLX',name:'Netflix'},
+    {sym:'CRM',name:'Salesforce'},{sym:'LIN',name:'Linde'},{sym:'TXN',name:'Texas Instruments'},{sym:'AMD',name:'AMD'},
+    {sym:'INTC',name:'Intel'},{sym:'ORCL',name:'Oracle'},{sym:'NKE',name:'Nike'},{sym:'QCOM',name:'Qualcomm'},
+    {sym:'HON',name:'Honeywell'},{sym:'UPS',name:'UPS'},{sym:'LOW',name:"Lowe's"},{sym:'IBM',name:'IBM'},
+    {sym:'GS',name:'Goldman Sachs'},{sym:'CAT',name:'Caterpillar'},{sym:'RTX',name:'RTX'},{sym:'AMGN',name:'Amgen'},
+    {sym:'BA',name:'Boeing'},{sym:'SPGI',name:'S&P Global'},{sym:'BLK',name:'BlackRock'},{sym:'DE',name:'Deere'},
+    {sym:'MDLZ',name:'Mondelez'},{sym:'ISRG',name:'Intuitive Surgical'},{sym:'ADP',name:'ADP'},{sym:'GILD',name:'Gilead'},
+    {sym:'BKNG',name:'Booking'},{sym:'SYK',name:'Stryker'},{sym:'ZTS',name:'Zoetis'},{sym:'TJX',name:'TJX'},
+    {sym:'PLD',name:'Prologis'},{sym:'MMC',name:'Marsh McLennan'},{sym:'MO',name:'Altria'},{sym:'LMT',name:'Lockheed Martin'},
+    {sym:'C',name:'Citigroup'},{sym:'CB',name:'Chubb'},{sym:'PNC',name:'PNC'},{sym:'USB',name:'US Bancorp'},
+    {sym:'T',name:'AT&T'},{sym:'VZ',name:'Verizon'},{sym:'SCHW',name:'Schwab'},{sym:'CME',name:'CME Group'},
+    {sym:'FIS',name:'Fidelity NIS'},{sym:'FISV',name:'Fiserv'},{sym:'AON',name:'Aon'},{sym:'CL',name:'Colgate'},
+    {sym:'ETN',name:'Eaton'},{sym:'EOG',name:'EOG Resources'},{sym:'SLB',name:'Schlumberger'},{sym:'COP',name:'ConocoPhillips'},
+    {sym:'PSX',name:'Phillips 66'},{sym:'KMI',name:'Kinder Morgan'},{sym:'OXY',name:'Occidental'},{sym:'HCA',name:'HCA Healthcare'},
+    {sym:'HUM',name:'Humana'},{sym:'CI',name:'Cigna'},{sym:'ELV',name:'Elevance'},{sym:'MRNA',name:'Moderna'},
+    {sym:'REGN',name:'Regeneron'},{sym:'BIIB',name:'Biogen'},{sym:'ROKU',name:'Roku'},{sym:'SNAP',name:'Snap'},
+    {sym:'UBER',name:'Uber'},{sym:'LYFT',name:'Lyft'},{sym:'SQ',name:'Block'},{sym:'SHOP',name:'Shopify'},
+    {sym:'DOCU',name:'DocuSign'},{sym:'BTC-USD',name:'Bitcoin'},{sym:'ETH-USD',name:'Ethereum'},{sym:'GC=F',name:'Gold'},
+    {sym:'VOO',name:'Vanguard S&P 500'},{sym:'QQQ',name:'Invesco Nasdaq'},
+];
+
+function pickStock(selectEl, targetInputId) {
+    const val = selectEl.value;
+    if (!val) return;
+    document.getElementById(targetInputId).value = val;
+    selectEl.value = '';
+    if (targetInputId === 'ticker') runAnalysis();
+    if (targetInputId === 'sim-ticker') return; // user will click Simulate
+}
 
 // ── Navigation ──
 function showPage(name) {
@@ -627,29 +696,44 @@ function renderAnalysis(data) {
 }
 
 // ── Market Overview ──
+let allMarketData = [];
 async function loadMarket() {
-    showLoad('Loading market data...');
+    showLoad('Loading market data (indices, sectors & 100 stocks)...');
     try {
         const r = await fetch('/api/market');
-        const d = await r.json();
-        const el = document.getElementById('market-data');
-
-        // Group by type
-        const indices = d.filter(i => i.symbol.startsWith('^'));
-        const sectors = d.filter(i => i.symbol.startsWith('XL') || i.symbol === 'XLRE');
-        const other = d.filter(i => !i.symbol.startsWith('^') && !i.symbol.startsWith('XL') && i.symbol !== 'XLRE');
-
-        let html = '<div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.5rem;grid-column:1/-1">Major Indices</div>';
-        html += indices.map(mkItem).join('');
-        html += '<div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0.75rem 0 0.5rem;grid-column:1/-1">Sector ETFs</div>';
-        html += sectors.map(mkItem).join('');
-        html += '<div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0.75rem 0 0.5rem;grid-column:1/-1">Commodities, Crypto & Bonds</div>';
-        html += other.map(mkItem).join('');
-
-        el.innerHTML = html;
+        allMarketData = await r.json();
+        renderMarket();
         marketLoaded = true;
     } catch(e) { document.getElementById('market-data').innerHTML = 'Failed to load.'; }
     hideLoad();
+}
+
+function renderMarket() {
+    const el = document.getElementById('market-data');
+    const filterVal = document.getElementById('market-filter')?.value || 'all';
+    const searchVal = (document.getElementById('market-search')?.value || '').toUpperCase();
+
+    let d = [...allMarketData];
+    if (searchVal) d = d.filter(i => i.symbol.includes(searchVal) || i.name.toUpperCase().includes(searchVal));
+
+    const groups = [
+        { key: 'index', label: 'Major Indices' },
+        { key: 'sector', label: 'Sector ETFs' },
+        { key: 'commodity', label: 'Commodities' },
+        { key: 'crypto', label: 'Crypto' },
+        { key: 'bond', label: 'Bonds' },
+        { key: 'stock', label: 'Tracked Stocks (100)' },
+    ];
+
+    let html = '';
+    for (const g of groups) {
+        if (filterVal !== 'all' && filterVal !== g.key) continue;
+        const items = d.filter(i => i.type === g.key);
+        if (items.length === 0) continue;
+        html += `<div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0.75rem 0 0.5rem;grid-column:1/-1">${g.label}</div>`;
+        html += items.map(mkItem).join('');
+    }
+    el.innerHTML = html || '<div style="color:var(--muted);padding:1rem">No results found.</div>';
 }
 
 function mkItem(i) {
@@ -1130,6 +1214,24 @@ function updateChartThemes() {
 }
 
 applyStoredTheme();
+
+// ── Populate all stock dropdowns ──
+function populateDropdowns() {
+    const selectors = ['nav-picker', 'analyze-picker', 'sim-picker'];
+    for (const id of selectors) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        // Keep the first placeholder option
+        while (el.options.length > 1) el.remove(1);
+        for (const s of STOCK_LIST) {
+            const opt = document.createElement('option');
+            opt.value = s.sym;
+            opt.textContent = `${s.sym} — ${s.name}`;
+            el.appendChild(opt);
+        }
+    }
+}
+populateDropdowns();
 
 // Boot
 setupShareLinks();

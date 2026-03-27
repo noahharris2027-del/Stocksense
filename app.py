@@ -354,20 +354,44 @@ def market_overview():
     if cached: return jsonify(cached)
     tickers = {
         # Major Indices
-        '^GSPC': 'S&P 500', '^DJI': 'Dow Jones', '^IXIC': 'Nasdaq',
-        '^RUT': 'Russell 2000', '^VIX': 'VIX (Fear Index)',
+        '^GSPC': ('S&P 500', 'index'), '^DJI': ('Dow Jones', 'index'), '^IXIC': ('Nasdaq', 'index'),
+        '^RUT': ('Russell 2000', 'index'), '^VIX': ('VIX (Fear Index)', 'index'),
         # International
-        '^FTSE': 'FTSE 100', '^GDAXI': 'DAX', '^N225': 'Nikkei 225', '^HSI': 'Hang Seng',
+        '^FTSE': ('FTSE 100', 'index'), '^GDAXI': ('DAX', 'index'), '^N225': ('Nikkei 225', 'index'), '^HSI': ('Hang Seng', 'index'),
         # Sectors (SPDR)
-        'XLK': 'Tech', 'XLF': 'Financials', 'XLV': 'Healthcare',
-        'XLE': 'Energy', 'XLY': 'Consumer Disc.', 'XLP': 'Consumer Staples',
-        'XLI': 'Industrials', 'XLB': 'Materials', 'XLRE': 'Real Estate',
-        'XLU': 'Utilities', 'XLC': 'Communication',
+        'XLK': ('Tech', 'sector'), 'XLF': ('Financials', 'sector'), 'XLV': ('Healthcare', 'sector'),
+        'XLE': ('Energy', 'sector'), 'XLY': ('Consumer Disc.', 'sector'), 'XLP': ('Consumer Staples', 'sector'),
+        'XLI': ('Industrials', 'sector'), 'XLB': ('Materials', 'sector'), 'XLRE': ('Real Estate', 'sector'),
+        'XLU': ('Utilities', 'sector'), 'XLC': ('Communication', 'sector'),
         # Commodities / Crypto / Bonds
-        'GC=F': 'Gold', 'SI=F': 'Silver', 'CL=F': 'Crude Oil',
-        'BTC-USD': 'Bitcoin', 'ETH-USD': 'Ethereum',
-        'TLT': 'Long-Term Bonds', 'SHY': 'Short-Term Bonds',
+        'GC=F': ('Gold', 'commodity'), 'SI=F': ('Silver', 'commodity'), 'CL=F': ('Crude Oil', 'commodity'),
+        'BTC-USD': ('Bitcoin', 'crypto'), 'ETH-USD': ('Ethereum', 'crypto'),
+        'TLT': ('Long-Term Bonds', 'bond'), 'SHY': ('Short-Term Bonds', 'bond'),
     }
+    # Add all tracked stocks
+    stock_names = {
+        'AAPL':'Apple','MSFT':'Microsoft','GOOGL':'Alphabet','AMZN':'Amazon','META':'Meta','NVDA':'Nvidia',
+        'TSLA':'Tesla','BRK-B':'Berkshire','JPM':'JPMorgan','V':'Visa','JNJ':'J&J','WMT':'Walmart',
+        'PG':'Procter & Gamble','MA':'Mastercard','UNH':'UnitedHealth','HD':'Home Depot','DIS':'Disney',
+        'PYPL':'PayPal','BAC':'Bank of America','XOM':'ExxonMobil','CVX':'Chevron','PFE':'Pfizer',
+        'KO':'Coca-Cola','PEP':'PepsiCo','TMO':'Thermo Fisher','ABBV':'AbbVie','MRK':'Merck',
+        'COST':'Costco','AVGO':'Broadcom','ACN':'Accenture','CSCO':'Cisco','MCD':'McDonald\'s',
+        'ABT':'Abbott','DHR':'Danaher','WFC':'Wells Fargo','NFLX':'Netflix','CRM':'Salesforce',
+        'LIN':'Linde','TXN':'Texas Instruments','AMD':'AMD','INTC':'Intel','ORCL':'Oracle',
+        'NKE':'Nike','QCOM':'Qualcomm','HON':'Honeywell','UPS':'UPS','LOW':'Lowe\'s','IBM':'IBM',
+        'GS':'Goldman Sachs','CAT':'Caterpillar','RTX':'RTX','AMGN':'Amgen','BA':'Boeing',
+        'SPGI':'S&P Global','BLK':'BlackRock','DE':'Deere','MDLZ':'Mondelez','ISRG':'Intuitive Surgical',
+        'ADP':'ADP','GILD':'Gilead','BKNG':'Booking','SYK':'Stryker','ZTS':'Zoetis','TJX':'TJX',
+        'PLD':'Prologis','MMC':'Marsh McLennan','MO':'Altria','LMT':'Lockheed Martin','C':'Citigroup',
+        'CB':'Chubb','PNC':'PNC','USB':'US Bancorp','T':'AT&T','VZ':'Verizon','SCHW':'Schwab',
+        'CME':'CME Group','FIS':'Fidelity NIS','FISV':'Fiserv','AON':'Aon','CL':'Colgate',
+        'ETN':'Eaton','EOG':'EOG Resources','SLB':'Schlumberger','COP':'ConocoPhillips','PSX':'Phillips 66',
+        'KMI':'Kinder Morgan','OXY':'Occidental','HCA':'HCA Healthcare','HUM':'Humana','CI':'Cigna',
+        'ELV':'Elevance','MRNA':'Moderna','REGN':'Regeneron','BIIB':'Biogen','ROKU':'Roku',
+        'SNAP':'Snap','UBER':'Uber','LYFT':'Lyft','SQ':'Block','SHOP':'Shopify','DOCU':'DocuSign',
+    }
+    for sym, name in stock_names.items():
+        tickers[sym] = (name, 'stock')
 
     results = []
     symbols = list(tickers.keys())
@@ -391,8 +415,9 @@ def market_overview():
                     prev = float(d['Close'].iloc[-2])
                     chg = last - prev
                     chg_pct = (chg / prev) * 100
+                    name_val, type_val = tickers[sym]
                     results.append({
-                        'symbol': sym, 'name': tickers[sym],
+                        'symbol': sym, 'name': name_val, 'type': type_val,
                         'price': round(last, 2),
                         'change': round(chg, 2),
                         'change_pct': round(chg_pct, 2),
