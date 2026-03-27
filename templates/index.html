@@ -13,25 +13,26 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        :root{--bg:#06060b;--card:#0e0e16;--card2:#12121c;--border:#1a1a2a;--text:#ddd;--muted:#777;--green:#00c853;--red:#ff1744;--blue:#448aff;--gold:#ffd54f;--purple:#b388ff;--cyan:#00bcd4}
+        :root{--bg:#06060b;--card:#0e0e16;--card2:#12121c;--border:#1a1a2a;--text:#ddd;--muted:#777;--green:#00c853;--red:#ff1744;--blue:#448aff;--gold:#ffd54f;--purple:#b388ff;--cyan:#00bcd4;--nav-bg:#0a0a12;--disclaimer-bg:#13110a;--live-bg:#080810;--tape-bg:#0a0a10;--chart-bg:#0a0a10;--loader-bg:rgba(0,0,0,0.65);--modal-bg:rgba(0,0,0,0.8);--tbl-row-hover:rgba(255,255,255,0.02);--tbl-border:#111;--share-bg:linear-gradient(90deg,#0d1117,#161b22);--grid-color:#111;--tick-color:#444;--legend-color:#666;--sparkline-hist:#fff;--spark-divider:rgba(255,255,255,0.1)}
+        :root.light{--bg:#f4f5f7;--card:#ffffff;--card2:#f0f1f4;--border:#d8dbe0;--text:#1a1a2e;--muted:#666;--green:#0a8f3f;--red:#d32f2f;--blue:#1565c0;--gold:#e6a800;--purple:#7b1fa2;--cyan:#00838f;--nav-bg:#ffffff;--disclaimer-bg:#fff8e1;--live-bg:#fafbfc;--tape-bg:#f0f1f4;--chart-bg:#fafbfc;--loader-bg:rgba(255,255,255,0.75);--modal-bg:rgba(0,0,0,0.45);--tbl-row-hover:rgba(0,0,0,0.03);--tbl-border:#e8e8e8;--share-bg:linear-gradient(90deg,#f8f9fa,#eef0f2);--grid-color:#eee;--tick-color:#999;--legend-color:#666;--sparkline-hist:#1a1a2e;--spark-divider:rgba(0,0,0,0.1)}
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
         a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 
         /* Nav */
-        nav{background:#0a0a12;border-bottom:1px solid var(--border);padding:0.8rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;position:sticky;top:0;z-index:100}
+        nav{background:var(--nav-bg);border-bottom:1px solid var(--border);padding:0.8rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;position:sticky;top:0;z-index:100}
         nav h1{font-size:1.3rem;letter-spacing:1px}
         nav h1 span{color:var(--green)}
         .nav-links{display:flex;gap:1rem;font-size:0.82rem}
         .nav-links button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.82rem;padding:0.3rem 0.5rem;border-radius:4px}
-        .nav-links button:hover,.nav-links button.active{color:#fff;background:rgba(255,255,255,0.05)}
+        .nav-links button:hover,.nav-links button.active{color:var(--text);background:rgba(128,128,128,0.1)}
         .search-bar{display:flex;gap:0.4rem;align-items:center}
-        .search-bar input{padding:0.45rem 0.8rem;border-radius:6px;border:1px solid var(--border);background:var(--card);color:#fff;font-size:0.9rem;width:180px;text-transform:uppercase}
+        .search-bar input{padding:0.45rem 0.8rem;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:0.9rem;width:180px;text-transform:uppercase}
         .search-bar button{padding:0.45rem 1rem;border-radius:6px;border:none;background:var(--green);color:#000;font-weight:700;cursor:pointer;font-size:0.82rem}
         .search-bar button:disabled{opacity:0.4}
-        .disclaimer{text-align:center;padding:0.35rem;background:#13110a;color:var(--gold);font-size:0.65rem;border-bottom:1px solid #2a2500}
+        .disclaimer{text-align:center;padding:0.35rem;background:var(--disclaimer-bg);color:var(--gold);font-size:0.65rem;border-bottom:1px solid var(--border)}
 
         /* Live indicator */
-        .live-bar{display:flex;align-items:center;justify-content:space-between;padding:0.3rem 2rem;background:#080810;border-bottom:1px solid var(--border);font-size:0.72rem}
+        .live-bar{display:flex;align-items:center;justify-content:space-between;padding:0.3rem 2rem;background:var(--live-bg);border-bottom:1px solid var(--border);font-size:0.72rem}
         .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px;animation:pulse 2s infinite}
         .live-dot.closed{background:var(--red);animation:none}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
@@ -39,7 +40,7 @@
         .live-change{font-weight:600;font-size:0.85rem}
         .live-meta{color:var(--muted)}
         .refresh-badge{font-size:0.65rem;color:var(--muted);background:var(--card);padding:0.15rem 0.5rem;border-radius:4px;border:1px solid var(--border)}
-        .refresh-badge select{background:var(--card);color:var(--text);border:none;font-size:0.65rem;cursor:pointer}
+        .refresh-badge select{background:var(--card2);color:var(--text);border:none;font-size:0.65rem;cursor:pointer}
 
         .container{max-width:1500px;margin:0 auto;padding:1.25rem}
 
@@ -54,17 +55,17 @@
         .page{display:none}.page.active{display:block}
 
         /* Loading */
-        .loader-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:999;justify-content:center;align-items:center;flex-direction:column;gap:0.75rem}
+        .loader-wrap{display:none;position:fixed;inset:0;background:var(--loader-bg);z-index:999;justify-content:center;align-items:center;flex-direction:column;gap:0.75rem}
         .loader-wrap.show{display:flex}
         .loader{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
         .load-text{color:var(--muted);font-size:0.85rem}
 
         /* Market ticker tape */
-        .tape{background:#0a0a10;border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap;padding:0.4rem 0}
+        .tape{background:var(--tape-bg);border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap;padding:0.4rem 0}
         .tape-inner{display:inline-flex;gap:2rem;animation:scroll 60s linear infinite;padding-left:100%}
         .tape-item{display:inline-flex;gap:0.4rem;font-size:0.75rem;align-items:center}
-        .tape-item .sym{color:#fff;font-weight:600}
+        .tape-item .sym{color:var(--text);font-weight:600}
         .tape-item .price{color:var(--muted)}
         .tape-item .chg{font-weight:600}
         .tape-item .up{color:var(--green)}.tape-item .dn{color:var(--red)}
@@ -85,7 +86,7 @@
         .up{color:var(--green)}.dn{color:var(--red)}
 
         /* TradingView Chart */
-        .tv-chart{width:100%;height:420px;border-radius:8px;overflow:hidden;background:#0a0a10}
+        .tv-chart{width:100%;height:420px;border-radius:8px;overflow:hidden;background:var(--chart-bg)}
         .chart-short{height:180px}
 
         /* Chart.js containers */
@@ -115,9 +116,9 @@
         /* Tables */
         .tbl{width:100%;border-collapse:collapse;font-size:0.8rem}
         .tbl th{text-align:left;padding:0.5rem 0.6rem;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);cursor:pointer}
-        .tbl th:hover{color:#fff}
-        .tbl td{padding:0.4rem 0.6rem;border-bottom:1px solid #111}
-        .tbl tr:hover td{background:rgba(255,255,255,0.02)}
+        .tbl th:hover{color:var(--text)}
+        .tbl td{padding:0.4rem 0.6rem;border-bottom:1px solid var(--tbl-border)}
+        .tbl tr:hover td{background:var(--tbl-row-hover)}
         .tbl .r{text-align:right;font-variant-numeric:tabular-nums}
 
         /* Broker cards */
@@ -142,7 +143,7 @@
         .trend-badge.neutral{background:rgba(255,213,79,0.15);color:var(--gold)}
 
         /* Share banner */
-        .share-bar{background:linear-gradient(90deg,#0d1117,#161b22);border:1px solid var(--border);border-radius:12px;padding:0.75rem 1.25rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.6rem}
+        .share-bar{background:var(--share-bg);border:1px solid var(--border);border-radius:12px;padding:0.75rem 1.25rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.6rem}
         .share-left{display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0}
         .share-label{font-size:0.75rem;font-weight:600;white-space:nowrap}
         .share-url-box{display:flex;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem 0.3rem 0.75rem;flex:1;max-width:420px;min-width:0;gap:0.4rem}
@@ -198,10 +199,14 @@
         .sim-chart{width:100%;height:250px;margin-top:0.5rem}
 
         /* Stock detail modal */
-        .stock-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;justify-content:center;align-items:center;padding:1.5rem}
+        .stock-modal{display:none;position:fixed;inset:0;background:var(--modal-bg);z-index:200;justify-content:center;align-items:center;padding:1.5rem}
         .stock-modal.show{display:flex}
         .stock-modal-inner{background:var(--card);border:1px solid var(--border);border-radius:16px;max-width:750px;width:100%;max-height:85vh;overflow-y:auto;padding:1.5rem;position:relative}
         .stock-modal-close{position:absolute;top:0.75rem;right:1rem;background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer}
+
+        /* Theme toggle */
+        .theme-toggle{background:var(--card);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:1rem;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background 0.2s}
+        .theme-toggle:hover{background:var(--card2)}
 
         @media(max-width:900px){
             .score-row,.grid-2,.grid-3{grid-template-columns:1fr}
@@ -226,6 +231,7 @@
     <div class="search-bar">
         <input type="text" id="ticker" placeholder="Ticker..." value="^GSPC">
         <button id="go-btn" onclick="runAnalysis()">Analyze</button>
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">&#9790;</button>
     </div>
 </nav>
 <div class="disclaimer">Educational tool only. Uses public data & standard technical analysis. Not financial advice — consult a professional before investing.</div>
@@ -526,12 +532,13 @@ function renderAnalysis(data) {
     // ── TradingView Chart ──
     const container = document.getElementById('tv-main');
     if (tvChart) { tvChart.remove(); tvChart = null; }
+    const lt = isLight();
     tvChart = LightweightCharts.createChart(container, {
-        layout: { background: { color: '#0a0a10' }, textColor: '#888' },
-        grid: { vertLines: { color: '#111' }, horzLines: { color: '#111' } },
+        layout: { background: { color: lt ? '#fafbfc' : '#0a0a10' }, textColor: lt ? '#333' : '#888' },
+        grid: { vertLines: { color: lt ? '#e8e8e8' : '#111' }, horzLines: { color: lt ? '#e8e8e8' : '#111' } },
         crosshair: { mode: 0 },
-        timeScale: { borderColor: '#1a1a2a', timeVisible: false },
-        rightPriceScale: { borderColor: '#1a1a2a' },
+        timeScale: { borderColor: lt ? '#d8dbe0' : '#1a1a2a', timeVisible: false },
+        rightPriceScale: { borderColor: lt ? '#d8dbe0' : '#1a1a2a' },
     });
     tvSeries = tvChart.addCandlestickSeries({
         upColor: '#26a69a', downColor: '#ef5350',
@@ -564,10 +571,10 @@ function renderAnalysis(data) {
     const cOpts = {
         responsive: true, maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { labels: { color: '#666', font: { size: 9 } } } },
+        plugins: { legend: { labels: { color: getChartLegendColor(), font: { size: 9 } } } },
         scales: {
-            x: { ticks: { color: '#444', maxTicksLimit: 10, font: { size: 8 } }, grid: { color: '#111' } },
-            y: { ticks: { color: '#666', font: { size: 9 } }, grid: { color: '#111' } }
+            x: { ticks: { color: getChartTickColor(), maxTicksLimit: 10, font: { size: 8 } }, grid: { color: getChartGridColor() } },
+            y: { ticks: { color: getChartLegendColor(), font: { size: 9 } }, grid: { color: getChartGridColor() } }
         }
     };
 
@@ -785,7 +792,7 @@ function drawSparkline(id, hist, simP10, simP50, simP90) {
 
     // Divider line
     const divX = (hist.length - 1) * stepX;
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.strokeStyle = isLight() ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)';
     ctx.setLineDash([2,2]);
     ctx.beginPath(); ctx.moveTo(divX, 0); ctx.lineTo(divX, h); ctx.stroke();
     ctx.setLineDash([]);
@@ -798,7 +805,7 @@ function drawSparkline(id, hist, simP10, simP50, simP90) {
     ctx.closePath(); ctx.fill();
 
     // History line
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = isLight() ? '#1a1a2e' : '#fff';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     hist.forEach((v, i) => { i === 0 ? ctx.moveTo(0, y(v)) : ctx.lineTo(i * stepX, y(v)); });
@@ -895,7 +902,7 @@ async function runSimulation() {
         simChart = new Chart(document.getElementById('simChartCanvas'), {
             type: 'line',
             data: { labels, datasets: [
-                { label: 'Actual', data: histLine, borderColor: '#fff', borderWidth: 2, pointRadius: 0, fill: false },
+                { label: 'Actual', data: histLine, borderColor: isLight() ? '#1a1a2e' : '#fff', borderWidth: 2, pointRadius: 0, fill: false },
                 { label: 'Bear (10th)', data: bearLine, borderColor: 'rgba(255,23,68,0.6)', borderWidth: 1, borderDash: [4,3], pointRadius: 0, fill: false },
                 { label: 'Expected (50th)', data: midLine, borderColor: 'var(--blue)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false },
                 { label: 'Bull (90th)', data: bullLine, borderColor: 'rgba(0,200,83,0.6)', borderWidth: 1, borderDash: [4,3], pointRadius: 0, fill: '-1', backgroundColor: 'rgba(68,138,255,0.06)' },
@@ -905,7 +912,7 @@ async function runSimulation() {
                 responsive: true, maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { labels: { color: '#666', font: { size: 9 } } },
+                    legend: { labels: { color: getChartLegendColor(), font: { size: 9 } } },
                     annotation: { annotations: {
                         divider: { type: 'line', xMin: d.hist_dates.length - 1, xMax: d.hist_dates.length - 1, borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderDash: [4,4],
                             label: { display: true, content: 'Today', color: '#888', font: { size: 9 }, position: 'start' }
@@ -913,8 +920,8 @@ async function runSimulation() {
                     }}
                 },
                 scales: {
-                    x: { ticks: { color: '#444', maxTicksLimit: 10, font: { size: 8 } }, grid: { color: '#111' } },
-                    y: { ticks: { color: '#666', font: { size: 9 }, callback: v => '$' + v.toLocaleString() }, grid: { color: '#111' } }
+                    x: { ticks: { color: getChartTickColor(), maxTicksLimit: 10, font: { size: 8 } }, grid: { color: getChartGridColor() } },
+                    y: { ticks: { color: getChartLegendColor(), font: { size: 9 }, callback: v => '$' + v.toLocaleString() }, grid: { color: getChartGridColor() } }
                 }
             }
         });
@@ -1072,6 +1079,57 @@ runAnalysis = async function() {
     refreshLivePrice();
     setRefreshInterval();
 };
+
+// ── Theme Toggle ──
+function isLight() { return document.documentElement.classList.contains('light'); }
+
+function toggleTheme() {
+    const light = !isLight();
+    document.documentElement.classList.toggle('light', light);
+    localStorage.setItem('stocksense-theme', light ? 'light' : 'dark');
+    document.getElementById('theme-toggle').innerHTML = light ? '&#9728;' : '&#9790;';
+    updateChartThemes();
+}
+
+function applyStoredTheme() {
+    const stored = localStorage.getItem('stocksense-theme');
+    if (stored === 'light') {
+        document.documentElement.classList.add('light');
+        document.getElementById('theme-toggle').innerHTML = '&#9728;';
+    }
+}
+
+function getChartGridColor() { return isLight() ? '#e0e0e0' : '#111'; }
+function getChartTickColor() { return isLight() ? '#999' : '#444'; }
+function getChartLegendColor() { return isLight() ? '#666' : '#666'; }
+
+function updateChartThemes() {
+    // Update all active Chart.js charts
+    Object.values(cjsCharts).forEach(c => {
+        if (!c) return;
+        const scales = c.options.scales;
+        if (scales?.x) { scales.x.grid.color = getChartGridColor(); scales.x.ticks.color = getChartTickColor(); }
+        if (scales?.y) { scales.y.grid.color = getChartGridColor(); scales.y.ticks.color = getChartTickColor(); }
+        if (c.options.plugins?.legend?.labels) c.options.plugins.legend.labels.color = getChartLegendColor();
+        c.update('none');
+    });
+    if (simChart) {
+        const scales = simChart.options.scales;
+        if (scales?.x) { scales.x.grid.color = getChartGridColor(); scales.x.ticks.color = getChartTickColor(); }
+        if (scales?.y) { scales.y.grid.color = getChartGridColor(); scales.y.ticks.color = getChartTickColor(); }
+        simChart.update('none');
+    }
+    // Re-render TradingView chart if present
+    if (tvChart) {
+        const lt = isLight();
+        tvChart.applyOptions({
+            layout: { background: { color: lt ? '#fafbfc' : '#0a0a10' }, textColor: lt ? '#333' : '#999' },
+            grid: { vertLines: { color: lt ? '#e8e8e8' : '#111' }, horzLines: { color: lt ? '#e8e8e8' : '#111' } },
+        });
+    }
+}
+
+applyStoredTheme();
 
 // Boot
 setupShareLinks();
