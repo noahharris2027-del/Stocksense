@@ -173,6 +173,36 @@
         .mkt-price{font-size:0.95rem;font-weight:600;margin-top:0.15rem}
         .mkt-chg{font-size:0.78rem;font-weight:600}
 
+        /* Screener cards */
+        .stock-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:0.6rem}
+        .stock-card{background:var(--card2);border-radius:10px;padding:0.8rem;border:1px solid var(--border);cursor:pointer;transition:border-color 0.15s}
+        .stock-card:hover{border-color:rgba(255,255,255,0.15)}
+        .stock-top{display:flex;justify-content:space-between;align-items:center}
+        .stock-sym{font-weight:800;font-size:1rem}
+        .stock-action{padding:0.2rem 0.6rem;border-radius:5px;font-size:0.7rem;font-weight:700;color:#000}
+        .stock-row{display:flex;justify-content:space-between;margin-top:0.4rem;font-size:0.75rem}
+        .stock-label{color:var(--muted)}
+        .stock-val{font-weight:600;font-variant-numeric:tabular-nums}
+        .stock-pred{margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border)}
+        .stock-pred-title{font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.3rem}
+        .pred-range{display:flex;align-items:center;gap:0.3rem;font-size:0.72rem;margin-top:0.25rem}
+        .pred-range .bar{flex:1;height:6px;background:linear-gradient(90deg,var(--red),var(--gold),var(--green));border-radius:3px;position:relative}
+        .pred-range .marker{position:absolute;top:-3px;width:10px;height:10px;background:#fff;border-radius:50%;transform:translateX(-50%);box-shadow:0 0 4px rgba(255,255,255,0.5)}
+        .sparkline{width:100%;height:35px;margin-top:0.3rem}
+
+        /* Simulator */
+        .sim-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.5rem;margin-bottom:1rem}
+        .sim-item{background:var(--card2);padding:0.6rem;border-radius:8px;text-align:center}
+        .sim-label{font-size:0.6rem;color:var(--muted);text-transform:uppercase}
+        .sim-val{font-size:1.1rem;font-weight:700;margin-top:0.15rem}
+        .sim-chart{width:100%;height:250px;margin-top:0.5rem}
+
+        /* Stock detail modal */
+        .stock-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;justify-content:center;align-items:center;padding:1.5rem}
+        .stock-modal.show{display:flex}
+        .stock-modal-inner{background:var(--card);border:1px solid var(--border);border-radius:16px;max-width:750px;width:100%;max-height:85vh;overflow-y:auto;padding:1.5rem;position:relative}
+        .stock-modal-close{position:absolute;top:0.75rem;right:1rem;background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer}
+
         @media(max-width:900px){
             .score-row,.grid-2,.grid-3{grid-template-columns:1fr}
             nav{padding:0.6rem 1rem}
@@ -288,7 +318,43 @@
 
     <!-- ═══ SCREENER PAGE ═══ -->
     <div class="page" id="page-screener">
-        <div class="card"><h2>Stock Screener — 40+ Popular Stocks</h2><div id="screener-data"><div class="load-text">Loading screener...</div></div></div>
+        <div class="card">
+            <h2>Stock Screener — 100 Stocks with 60-Day Analysis & Predictions</h2>
+            <p style="font-size:0.72rem;color:var(--muted);margin-bottom:0.75rem">Real past 60-day data + Monte Carlo simulation for next 60 days. Click any stock for details.</p>
+            <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem;flex-wrap:wrap;align-items:center">
+                <input type="text" id="screener-search" placeholder="Filter stocks..." style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:#fff;font-size:0.8rem;width:180px">
+                <select id="screener-sort" style="padding:0.4rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:#fff;font-size:0.75rem">
+                    <option value="action">Sort: Action Rating</option>
+                    <option value="prob_up">Probability Up</option>
+                    <option value="expected_return">Expected Return</option>
+                    <option value="r60">60D Return</option>
+                    <option value="rsi">RSI</option>
+                    <option value="vol">Volatility</option>
+                    <option value="sharpe">Sharpe Ratio</option>
+                    <option value="symbol">Alphabetical</option>
+                </select>
+                <select id="screener-filter" style="padding:0.4rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:#fff;font-size:0.75rem">
+                    <option value="all">All Stocks</option>
+                    <option value="buy">Strong Buy / Buy Only</option>
+                    <option value="hold">Hold</option>
+                    <option value="cautious">Cautious / Reduce</option>
+                </select>
+            </div>
+            <div id="screener-data"><div class="load-text" style="padding:2rem;text-align:center"><div class="loader" style="margin:0 auto 0.75rem"></div>Analyzing 100 stocks... this may take a moment</div></div>
+        </div>
+
+        <!-- Investment Simulator -->
+        <div class="card">
+            <h2>Investment Simulator — "What If I Invest $X?"</h2>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
+                <span style="font-size:0.85rem">If I invest $</span>
+                <input type="number" id="sim-amount" value="1000" min="1" style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:#fff;font-size:0.9rem;width:120px">
+                <span style="font-size:0.85rem">in</span>
+                <input type="text" id="sim-ticker" placeholder="AAPL" value="AAPL" style="padding:0.4rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:#fff;font-size:0.9rem;width:100px;text-transform:uppercase">
+                <button onclick="runSimulation()" style="padding:0.5rem 1.2rem;border-radius:6px;border:none;background:var(--green);color:#000;font-weight:700;cursor:pointer;font-size:0.85rem">Simulate</button>
+            </div>
+            <div id="sim-results"></div>
+        </div>
     </div>
 
     <!-- ═══ BROKERS PAGE ═══ -->
@@ -590,31 +656,269 @@ function mkItem(i) {
 }
 
 // ── Screener ──
+let screenerData = [];
+let simChart = null;
+
 async function loadScreener() {
-    showLoad('Screening 40+ stocks...');
+    showLoad('Analyzing 100 stocks with 60-day data & Monte Carlo simulation...');
     try {
         const r = await fetch('/api/screener');
-        const d = await r.json();
-        let html = `<table class="tbl"><thead><tr>
-            <th>Symbol</th><th class="r">Price</th><th class="r">1M Return</th><th class="r">3M Return</th>
-            <th class="r">Volatility</th><th class="r">RSI</th><th>Trend</th>
-        </tr></thead><tbody>`;
-        for (const s of d) {
-            html += `<tr style="cursor:pointer" onclick="go('${s.symbol}')">
-                <td><strong>${s.symbol}</strong></td>
-                <td class="r">$${s.price.toLocaleString()}</td>
-                <td class="r" style="color:${s.r1m>=0?'var(--green)':'var(--red)'}">${s.r1m>=0?'+':''}${s.r1m}%</td>
-                <td class="r" style="color:${s.r3m>=0?'var(--green)':'var(--red)'}">${s.r3m>=0?'+':''}${s.r3m}%</td>
-                <td class="r">${s.vol}%</td>
-                <td class="r" style="color:${s.rsi>70?'var(--red)':s.rsi<30?'var(--green)':'var(--muted)'}">${s.rsi}</td>
-                <td><span class="trend-badge ${s.trend}">${s.trend}</span></td>
-            </tr>`;
-        }
-        html += '</tbody></table>';
-        document.getElementById('screener-data').innerHTML = html;
+        screenerData = await r.json();
+        renderScreener();
         screenerLoaded = true;
-    } catch(e) { document.getElementById('screener-data').innerHTML = 'Failed to load.'; }
+
+        // Wire up filters
+        document.getElementById('screener-search').addEventListener('input', renderScreener);
+        document.getElementById('screener-sort').addEventListener('change', renderScreener);
+        document.getElementById('screener-filter').addEventListener('change', renderScreener);
+    } catch(e) { document.getElementById('screener-data').innerHTML = '<div style="color:var(--red);padding:1rem">Failed to load screener data. Try refreshing.</div>'; }
     hideLoad();
+}
+
+function renderScreener() {
+    const q = (document.getElementById('screener-search')?.value || '').toUpperCase();
+    const sort = document.getElementById('screener-sort')?.value || 'action';
+    const filter = document.getElementById('screener-filter')?.value || 'all';
+
+    let data = [...screenerData];
+
+    // Filter by search
+    if (q) data = data.filter(s => s.symbol.includes(q));
+
+    // Filter by action
+    if (filter === 'buy') data = data.filter(s => s.action.includes('Buy'));
+    else if (filter === 'hold') data = data.filter(s => s.action === 'Hold');
+    else if (filter === 'cautious') data = data.filter(s => s.action === 'Cautious' || s.action === 'Reduce');
+
+    // Sort
+    const actionOrder = {'Strong Buy':5,'Buy':4,'Hold':3,'Cautious':2,'Reduce':1};
+    if (sort === 'action') data.sort((a,b) => (actionOrder[b.action]||0) - (actionOrder[a.action]||0));
+    else if (sort === 'symbol') data.sort((a,b) => a.symbol.localeCompare(b.symbol));
+    else if (sort === 'prob_up') data.sort((a,b) => b.prob_up - a.prob_up);
+    else if (sort === 'expected_return') data.sort((a,b) => b.expected_return - a.expected_return);
+    else if (sort === 'r60') data.sort((a,b) => b.r60 - a.r60);
+    else if (sort === 'rsi') data.sort((a,b) => a.rsi - b.rsi);
+    else if (sort === 'vol') data.sort((a,b) => a.vol - b.vol);
+    else if (sort === 'sharpe') data.sort((a,b) => b.sharpe_60d - a.sharpe_60d);
+
+    let html = `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem">Showing ${data.length} of ${screenerData.length} stocks</div>`;
+    html += '<div class="stock-grid">';
+
+    for (const s of data) {
+        const r60c = s.r60 >= 0 ? 'up' : 'dn';
+        const probPct = Math.min(100, Math.max(0, s.prob_up));
+        html += `<div class="stock-card" onclick="openStockDetail('${s.symbol}')">
+            <div class="stock-top">
+                <div>
+                    <span class="stock-sym">${s.symbol}</span>
+                    <span style="font-size:0.95rem;margin-left:0.5rem;font-weight:600">$${s.price}</span>
+                </div>
+                <span class="stock-action" style="background:${s.action_color}">${s.action}</span>
+            </div>
+            <div class="stock-row">
+                <span class="stock-label">60D Return</span>
+                <span class="stock-val ${r60c}">${s.r60>=0?'+':''}${s.r60}%</span>
+            </div>
+            <div class="stock-row">
+                <span class="stock-label">RSI</span>
+                <span class="stock-val" style="color:${s.rsi>70?'var(--red)':s.rsi<30?'var(--green)':'inherit'}">${s.rsi}</span>
+            </div>
+            <div class="stock-row">
+                <span class="stock-label">Volatility</span>
+                <span class="stock-val">${s.vol}%</span>
+            </div>
+            <div class="stock-row">
+                <span class="stock-label">Sharpe (60D)</span>
+                <span class="stock-val" style="color:${s.sharpe_60d>0.5?'var(--green)':s.sharpe_60d<-0.5?'var(--red)':'inherit'}">${s.sharpe_60d}</span>
+            </div>
+            <div class="stock-pred">
+                <div class="stock-pred-title">60-Day Forecast (Monte Carlo)</div>
+                <div class="stock-row">
+                    <span class="stock-label">Prob. Price Up</span>
+                    <span class="stock-val" style="color:${probPct>55?'var(--green)':probPct<45?'var(--red)':'var(--gold)'}">${s.prob_up}%</span>
+                </div>
+                <div class="stock-row">
+                    <span class="stock-label">Expected Return</span>
+                    <span class="stock-val ${s.expected_return>=0?'up':'dn'}">${s.expected_return>=0?'+':''}${s.expected_return}%</span>
+                </div>
+                <div class="stock-row" style="font-size:0.68rem;color:var(--muted)">
+                    <span>Bear $${s.pred_bear}</span>
+                    <span>Mid $${s.pred_mid}</span>
+                    <span>Bull $${s.pred_bull}</span>
+                </div>
+                <div class="pred-range" style="margin-top:0.35rem">
+                    <span style="font-size:0.65rem;color:var(--red)">$${s.pred_bear}</span>
+                    <div class="bar"><div class="marker" style="left:${probPct}%"></div></div>
+                    <span style="font-size:0.65rem;color:var(--green)">$${s.pred_bull}</span>
+                </div>
+            </div>
+            <canvas class="sparkline" id="spark-${s.symbol}" width="300" height="35"></canvas>
+        </div>`;
+    }
+    html += '</div>';
+    document.getElementById('screener-data').innerHTML = html;
+
+    // Draw sparklines
+    requestAnimationFrame(() => {
+        for (const s of data) {
+            drawSparkline(`spark-${s.symbol}`, s.prices_60d, s.sim_p10, s.sim_p50, s.sim_p90);
+        }
+    });
+}
+
+function drawSparkline(id, hist, simP10, simP50, simP90) {
+    const canvas = document.getElementById(id);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width = canvas.offsetWidth * 2;
+    const h = canvas.height = 70;
+    ctx.clearRect(0, 0, w, h);
+
+    const all = [...hist, ...simP90];
+    const mn = Math.min(...all, ...simP10);
+    const mx = Math.max(...all);
+    const range = mx - mn || 1;
+    const totalPts = hist.length + simP50.length;
+    const stepX = w / (totalPts - 1);
+
+    const y = v => h - ((v - mn) / range) * (h - 4) - 2;
+
+    // Divider line
+    const divX = (hist.length - 1) * stepX;
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.setLineDash([2,2]);
+    ctx.beginPath(); ctx.moveTo(divX, 0); ctx.lineTo(divX, h); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Sim cone (fill between p10 and p90)
+    ctx.fillStyle = 'rgba(68,138,255,0.08)';
+    ctx.beginPath();
+    for (let i = 0; i < simP90.length; i++) ctx.lineTo(divX + i * stepX, y(simP90[i]));
+    for (let i = simP10.length - 1; i >= 0; i--) ctx.lineTo(divX + i * stepX, y(simP10[i]));
+    ctx.closePath(); ctx.fill();
+
+    // History line
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    hist.forEach((v, i) => { i === 0 ? ctx.moveTo(0, y(v)) : ctx.lineTo(i * stepX, y(v)); });
+    ctx.stroke();
+
+    // Sim median line
+    ctx.strokeStyle = 'rgba(68,138,255,0.7)';
+    ctx.setLineDash([3,2]);
+    ctx.beginPath();
+    ctx.moveTo(divX, y(hist[hist.length-1]));
+    simP50.forEach((v, i) => ctx.lineTo(divX + i * stepX, y(v)));
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+function openStockDetail(sym) {
+    const s = screenerData.find(x => x.symbol === sym);
+    if (!s) return;
+
+    // Use sim-ticker for simulator shortcut
+    document.getElementById('sim-ticker').value = sym;
+
+    // Open full analysis
+    showPage_direct('analyze');
+    document.getElementById('ticker').value = sym;
+    runAnalysis();
+}
+
+// ── Investment Simulator ──
+async function runSimulation() {
+    const ticker = document.getElementById('sim-ticker').value.trim().toUpperCase();
+    const amount = parseFloat(document.getElementById('sim-amount').value) || 1000;
+    if (!ticker) return;
+
+    const el = document.getElementById('sim-results');
+    el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted)"><div class="loader" style="margin:0 auto 0.5rem"></div>Running 2,000 simulations...</div>';
+
+    try {
+        const r = await fetch(`/api/simulate?ticker=${encodeURIComponent(ticker)}&amount=${amount}`);
+        const d = await r.json();
+        if (d.error) { el.innerHTML = `<div style="color:var(--red)">${d.error}</div>`; return; }
+
+        const midGain = d.mid - amount;
+        const midPct = ((d.mid / amount - 1) * 100).toFixed(1);
+
+        let html = `<h3 style="font-size:0.85rem;margin-bottom:0.75rem">$${amount.toLocaleString()} invested in <strong>${ticker}</strong> at $${d.price}/share (${d.shares.toFixed(2)} shares)</h3>`;
+
+        // Historical results
+        html += `<div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.4rem">If you had invested...</div>`;
+        html += `<div class="sim-grid">
+            <div class="sim-item"><div class="sim-label">60 Days Ago → Now</div><div class="sim-val ${d.hist_60d_pct>=0?'up':'dn'}">${d.hist_60d_pct>=0?'+':''}$${d.hist_60d_gain.toLocaleString()}</div><div style="font-size:0.7rem;color:var(--muted)">${d.hist_60d_pct>=0?'+':''}${d.hist_60d_pct}%</div></div>
+            <div class="sim-item"><div class="sim-label">1 Year Ago → Now</div><div class="sim-val ${d.hist_1y_pct>=0?'up':'dn'}">${d.hist_1y_pct>=0?'+':''}$${d.hist_1y_gain.toLocaleString()}</div><div style="font-size:0.7rem;color:var(--muted)">${d.hist_1y_pct>=0?'+':''}${d.hist_1y_pct}%</div></div>
+        </div>`;
+
+        // Forward projections
+        html += `<div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:0.75rem 0 0.4rem">Projected Value in 60 Days (Monte Carlo — 2,000 simulations)</div>`;
+        html += `<div class="sim-grid">
+            <div class="sim-item" style="border-left:3px solid var(--red)"><div class="sim-label">Bear Case (10th %ile)</div><div class="sim-val dn">$${d.bear.toLocaleString()}</div><div style="font-size:0.7rem;color:var(--red)">${((d.bear/amount-1)*100).toFixed(1)}%</div></div>
+            <div class="sim-item"><div class="sim-label">Low Case (25th)</div><div class="sim-val">${d.low>=amount?'<span class=up>':'<span class=dn>'}$${d.low.toLocaleString()}</span></div></div>
+            <div class="sim-item" style="border-left:3px solid var(--blue)"><div class="sim-label">Expected (Median)</div><div class="sim-val" style="color:var(--blue)">$${d.mid.toLocaleString()}</div><div style="font-size:0.7rem;color:var(--muted)">${midPct>=0?'+':''}${midPct}%</div></div>
+            <div class="sim-item"><div class="sim-label">High Case (75th)</div><div class="sim-val up">$${d.high.toLocaleString()}</div></div>
+            <div class="sim-item" style="border-left:3px solid var(--green)"><div class="sim-label">Bull Case (90th %ile)</div><div class="sim-val up">$${d.bull.toLocaleString()}</div><div style="font-size:0.7rem;color:var(--green)">+${((d.bull/amount-1)*100).toFixed(1)}%</div></div>
+        </div>`;
+
+        // Probabilities
+        html += `<div class="sim-grid" style="margin-top:0.5rem">
+            <div class="sim-item"><div class="sim-label">Probability of Profit</div><div class="sim-val" style="color:${d.prob_profit>55?'var(--green)':d.prob_profit<45?'var(--red)':'var(--gold)'}">${d.prob_profit}%</div></div>
+            <div class="sim-item"><div class="sim-label">Prob. of 10%+ Gain</div><div class="sim-val">${d.prob_10pct}%</div></div>
+            <div class="sim-item"><div class="sim-label">Prob. of 10%+ Loss</div><div class="sim-val" style="color:${d.prob_loss_10pct>20?'var(--red)':'var(--muted)'}">${d.prob_loss_10pct}%</div></div>
+            <div class="sim-item"><div class="sim-label">Best Outcome</div><div class="sim-val up">+$${d.max_gain.toLocaleString()}</div></div>
+            <div class="sim-item"><div class="sim-label">Worst Outcome</div><div class="sim-val dn">$${d.max_loss.toLocaleString()}</div></div>
+        </div>`;
+
+        // Chart
+        html += `<div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:1rem 0 0.4rem">Portfolio Value: 60 Days History + 60 Days Projected</div>`;
+        html += `<div class="sim-chart"><canvas id="simChartCanvas"></canvas></div>`;
+
+        el.innerHTML = html;
+
+        // Render simulation chart
+        if (simChart) simChart.destroy();
+        const labels = [...d.hist_dates, ...d.future_dates];
+        const histLine = [...d.hist_values, ...Array(d.future_dates.length).fill(null)];
+        const bearLine = [...Array(d.hist_dates.length).fill(null), ...d.sim_bear];
+        const midLine = [...Array(d.hist_dates.length).fill(null), ...d.sim_mid];
+        const bullLine = [...Array(d.hist_dates.length).fill(null), ...d.sim_bull];
+        // Connect lines at junction
+        bearLine[d.hist_dates.length - 1] = d.hist_values[d.hist_values.length - 1];
+        midLine[d.hist_dates.length - 1] = d.hist_values[d.hist_values.length - 1];
+        bullLine[d.hist_dates.length - 1] = d.hist_values[d.hist_values.length - 1];
+
+        const amountLine = Array(labels.length).fill(amount);
+
+        simChart = new Chart(document.getElementById('simChartCanvas'), {
+            type: 'line',
+            data: { labels, datasets: [
+                { label: 'Actual', data: histLine, borderColor: '#fff', borderWidth: 2, pointRadius: 0, fill: false },
+                { label: 'Bear (10th)', data: bearLine, borderColor: 'rgba(255,23,68,0.6)', borderWidth: 1, borderDash: [4,3], pointRadius: 0, fill: false },
+                { label: 'Expected (50th)', data: midLine, borderColor: 'var(--blue)', borderWidth: 2, borderDash: [6,3], pointRadius: 0, fill: false },
+                { label: 'Bull (90th)', data: bullLine, borderColor: 'rgba(0,200,83,0.6)', borderWidth: 1, borderDash: [4,3], pointRadius: 0, fill: '-1', backgroundColor: 'rgba(68,138,255,0.06)' },
+                { label: 'Invested', data: amountLine, borderColor: 'rgba(255,213,79,0.3)', borderWidth: 1, borderDash: [2,4], pointRadius: 0, fill: false },
+            ]},
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { labels: { color: '#666', font: { size: 9 } } },
+                    annotation: { annotations: {
+                        divider: { type: 'line', xMin: d.hist_dates.length - 1, xMax: d.hist_dates.length - 1, borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderDash: [4,4],
+                            label: { display: true, content: 'Today', color: '#888', font: { size: 9 }, position: 'start' }
+                        }
+                    }}
+                },
+                scales: {
+                    x: { ticks: { color: '#444', maxTicksLimit: 10, font: { size: 8 } }, grid: { color: '#111' } },
+                    y: { ticks: { color: '#666', font: { size: 9 }, callback: v => '$' + v.toLocaleString() }, grid: { color: '#111' } }
+                }
+            }
+        });
+    } catch(e) { el.innerHTML = `<div style="color:var(--red)">Error: ${e.message}</div>`; }
 }
 
 // ── Brokers ──

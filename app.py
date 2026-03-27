@@ -444,43 +444,316 @@ def brokers():
     return jsonify(BROKERS)
 
 
-@app.route('/api/screener')
-def screener():
-    """Screen popular stocks with key metrics."""
-    cached = cache_get('screener', max_age=180)
-    if cached: return jsonify(cached)
-    stocks = ['AAPL','MSFT','NVDA','GOOGL','AMZN','META','TSLA','BRK-B',
-              'JPM','V','JNJ','WMT','PG','MA','HD','DIS','NFLX','PYPL',
-              'AMD','CRM','INTC','CSCO','PEP','KO','MRK','ABT','COST',
-              'NKE','BA','GS','MS','UBER','SQ','SHOP','PLTR','COIN',
-              'SOFI','RIVN','ABNB','SNAP','RBLX','DKNG']
-    results = []
-    joined = ' '.join(stocks)
-    try:
-        data = yf.download(joined, period='6mo', group_by='ticker', progress=False, threads=True)
-        for sym in stocks:
-            try:
-                d = data[sym].dropna() if sym in data.columns.get_level_values(0) else None
-                if d is None or len(d) < 20: continue
-                last = float(d['Close'].iloc[-1])
-                r1m = (last / float(d['Close'].iloc[-21]) - 1) * 100 if len(d) > 21 else 0
-                r3m = (last / float(d['Close'].iloc[-63]) - 1) * 100 if len(d) > 63 else 0
-                vol = d['Close'].pct_change().std() * np.sqrt(252) * 100
-                rsi_val = float(rsi(d['Close']).iloc[-1])
-                sma50_val = float(sma(d['Close'], 50).iloc[-1]) if len(d) >= 50 else last
-                above_sma50 = last > sma50_val
+ALL_STOCKS = [
+    'AAPL','MSFT','GOOGL','AMZN','META','NVDA','TSLA','BRK-B','JPM','V',
+    'JNJ','WMT','PG','MA','UNH','HD','DIS','PYPL','BAC','XOM',
+    'CVX','PFE','KO','PEP','TMO','ABBV','MRK','COST','AVGO','ACN',
+    'CSCO','MCD','ABT','DHR','WFC','NFLX','CRM','LIN','TXN','AMD',
+    'INTC','ORCL','NKE','QCOM','HON','UPS','LOW','IBM','GS','CAT',
+    'RTX','AMGN','BA','SPGI','BLK','DE','MDLZ','ISRG','ADP','GILD',
+    'BKNG','SYK','ZTS','TJX','PLD','MMC','MO','LMT','C','CB',
+    'PNC','USB','T','VZ','SCHW','CME','FIS','FISV','AON','CL',
+    'ETN','EOG','SLB','COP','PSX','KMI','OXY','HCA','HUM','CI',
+    'ELV','MRNA','REGN','BIIB','ROKU','SNAP','UBER','LYFT','SQ','SHOP','DOCU',
+]
 
-                results.append({
-                    'symbol': sym, 'price': round(last, 2),
-                    'r1m': round(r1m, 2), 'r3m': round(r3m, 2),
-                    'vol': round(vol, 1), 'rsi': round(rsi_val, 1),
-                    'above_sma50': above_sma50,
-                    'trend': 'bullish' if rsi_val > 50 and above_sma50 else 'bearish' if rsi_val < 50 and not above_sma50 else 'neutral',
-                })
-            except: continue
-    except: pass
+
+def analyze_stock_60d(sym, d):
+    """Deep 60-day analysis for a single stock."""
+    if d is None or len(d) < 60:
+        return None
+
+    close = d['Close']
+    last = float(close.iloc[-1])
+
+    # 60-day window
+    c60 = close.tail(60)
+    price_60d_ago = float(c60.iloc[0])
+    r60 = (last / price_60d_ago - 1) * 100
+
+    # Returns
+    daily_returns = close.pct_change().dropna()
+    r60_returns = daily_returns.tail(60)
+
+    # Volatility
+    daily_vol = float(r60_returns.std())
+    annual_vol = daily_vol * np.sqrt(252) * 100
+
+    # Key stats
+    avg_daily_return = float(r60_returns.mean())
+    sharpe_60d = (avg_daily_return / daily_vol) * np.sqrt(252) if daily_vol > 0 else 0
+
+    # Momentum
+    r5 = (last / float(close.iloc[-6]) - 1) * 100 if len(close) > 5 else 0
+    r20 = (last / float(close.iloc[-21]) - 1) * 100 if len(close) > 20 else 0
+
+    # Technical indicators
+    rsi_val = float(rsi(close).iloc[-1])
+    sma20_val = float(sma(close, 20).iloc[-1]) if len(close) >= 20 else last
+    sma50_val = float(sma(close, 50).iloc[-1]) if len(close) >= 50 else last
+    macd_line, macd_sig, macd_h = macd(close)
+    macd_val = float(macd_line.iloc[-1])
+    macd_sig_val = float(macd_sig.iloc[-1])
+
+    above_sma20 = last > sma20_val
+    above_sma50 = last > sma50_val
+    macd_bullish = macd_val > macd_sig_val
+
+    # ATR for targets
+    atr_val = float(atr(d['High'], d['Low'], d['Close']).iloc[-1])
+
+    # High/Low in 60 days
+    high_60 = float(d['High'].tail(60).max())
+    low_60 = float(d['Low'].tail(60).min())
+
+    # ── Score-based prediction ──
+    score = 0
+    if above_sma20: score += 10
+    else: score -= 10
+    if above_sma50: score += 15
+    else: score -= 15
+    if rsi_val < 30: score += 12
+    elif rsi_val > 70: score -= 12
+    elif rsi_val > 50: score += 5
+    else: score -= 5
+    if macd_bullish: score += 10
+    else: score -= 10
+    if r20 > 0: score += 8
+    else: score -= 8
+    if sharpe_60d > 0.5: score += 10
+    elif sharpe_60d < -0.5: score -= 10
+    score = max(-100, min(100, score))
+
+    # ── Monte Carlo simulation (1000 paths, 60 days forward) ──
+    n_sims = 1000
+    n_days = 60
+    mu = avg_daily_return
+    sigma = daily_vol
+    sims = np.zeros((n_sims, n_days))
+    sims[:, 0] = last
+    np.random.seed(42 + hash(sym) % 10000)
+    for t in range(1, n_days):
+        rand = np.random.normal(mu, sigma, n_sims)
+        sims[:, t] = sims[:, t-1] * (1 + rand)
+
+    final_prices = sims[:, -1]
+    p10 = float(np.percentile(final_prices, 10))
+    p25 = float(np.percentile(final_prices, 25))
+    p50 = float(np.percentile(final_prices, 50))
+    p75 = float(np.percentile(final_prices, 75))
+    p90 = float(np.percentile(final_prices, 90))
+    prob_up = float(np.mean(final_prices > last) * 100)
+
+    # Expected return
+    expected_return = (p50 / last - 1) * 100
+
+    # Action recommendation
+    if score > 25 and prob_up > 60:
+        action = 'Strong Buy'
+        action_color = '#00c853'
+    elif score > 10 and prob_up > 50:
+        action = 'Buy'
+        action_color = '#69f0ae'
+    elif score > -10:
+        action = 'Hold'
+        action_color = '#ffd54f'
+    elif score > -25:
+        action = 'Cautious'
+        action_color = '#ff8a65'
+    else:
+        action = 'Reduce'
+        action_color = '#ff1744'
+
+    # 60-day price history for sparkline
+    prices_60d = [round(float(v), 2) for v in c60.values]
+
+    # Simulation percentile paths (sampled for chart)
+    sim_p10 = [round(float(np.percentile(sims[:, t], 10)), 2) for t in range(n_days)]
+    sim_p50 = [round(float(np.percentile(sims[:, t], 50)), 2) for t in range(n_days)]
+    sim_p90 = [round(float(np.percentile(sims[:, t], 90)), 2) for t in range(n_days)]
+
+    return {
+        'symbol': sym,
+        'price': round(last, 2),
+        'price_60d_ago': round(price_60d_ago, 2),
+        'r5': round(r5, 2),
+        'r20': round(r20, 2),
+        'r60': round(r60, 2),
+        'vol': round(annual_vol, 1),
+        'rsi': round(rsi_val, 1),
+        'above_sma20': above_sma20,
+        'above_sma50': above_sma50,
+        'macd_bullish': macd_bullish,
+        'score': score,
+        'high_60': round(high_60, 2),
+        'low_60': round(low_60, 2),
+        'atr': round(atr_val, 2),
+        'sharpe_60d': round(sharpe_60d, 2),
+        # Prediction
+        'prob_up': round(prob_up, 1),
+        'expected_return': round(expected_return, 2),
+        'pred_bear': round(p10, 2),
+        'pred_low': round(p25, 2),
+        'pred_mid': round(p50, 2),
+        'pred_high': round(p75, 2),
+        'pred_bull': round(p90, 2),
+        'action': action,
+        'action_color': action_color,
+        # Charts
+        'prices_60d': prices_60d,
+        'sim_p10': sim_p10,
+        'sim_p50': sim_p50,
+        'sim_p90': sim_p90,
+        # Trend
+        'trend': 'bullish' if score > 10 else 'bearish' if score < -10 else 'neutral',
+    }
+
+
+@app.route('/api/screener')
+def screener_route():
+    """Full screener with 60-day analysis and predictions for 100 stocks."""
+    cached = cache_get('screener', max_age=300)
+    if cached: return jsonify(cached)
+
+    results = []
+    # Download in batches to avoid timeouts
+    batch_size = 25
+    for i in range(0, len(ALL_STOCKS), batch_size):
+        batch = ALL_STOCKS[i:i+batch_size]
+        joined = ' '.join(batch)
+        try:
+            data = yf.download(joined, period='1y', group_by='ticker', progress=False, threads=True)
+            for sym in batch:
+                try:
+                    if len(batch) == 1:
+                        d = data.dropna()
+                    else:
+                        d = data[sym].dropna() if sym in data.columns.get_level_values(0) else None
+                    result = analyze_stock_60d(sym, d)
+                    if result:
+                        results.append(result)
+                except:
+                    continue
+        except:
+            continue
+
     cache_set('screener', results)
     return jsonify(results)
+
+
+@app.route('/api/simulate')
+def simulate():
+    """Investment simulator — what happens if you invest $X in a stock."""
+    ticker = request.args.get('ticker', 'AAPL')
+    amount = float(request.args.get('amount', 1000))
+
+    cache_key = f'sim_{ticker}_{amount}'
+    cached = cache_get(cache_key, max_age=300)
+    if cached: return jsonify(cached)
+
+    try:
+        t = yf.Ticker(ticker)
+        h = t.history(period='1y').dropna()
+        if len(h) < 60:
+            return jsonify({'error': 'Insufficient data'}), 400
+
+        close = h['Close']
+        last = float(close.iloc[-1])
+        shares = amount / last
+
+        # Historical: if you invested 60 days ago
+        price_60d = float(close.iloc[-60]) if len(close) >= 60 else float(close.iloc[0])
+        shares_60d = amount / price_60d
+        value_now = shares_60d * last
+        gain_60d = value_now - amount
+        gain_pct_60d = (gain_60d / amount) * 100
+
+        # Historical: if you invested 1 year ago
+        price_1y = float(close.iloc[0])
+        shares_1y = amount / price_1y
+        value_1y = shares_1y * last
+        gain_1y = value_1y - amount
+        gain_pct_1y = (gain_1y / amount) * 100
+
+        # Forward simulation (Monte Carlo)
+        daily_returns = close.pct_change().dropna().tail(60)
+        mu = float(daily_returns.mean())
+        sigma = float(daily_returns.std())
+
+        n_sims = 2000
+        n_days = 60
+        np.random.seed(int(amount) + hash(ticker) % 10000)
+        sims = np.zeros((n_sims, n_days))
+        sims[:, 0] = last
+        for day in range(1, n_days):
+            rand = np.random.normal(mu, sigma, n_sims)
+            sims[:, day] = sims[:, day-1] * (1 + rand)
+
+        final_prices = sims[:, -1]
+        final_values = shares * final_prices
+
+        # Outcomes
+        bear_val = float(shares * np.percentile(final_prices, 10))
+        low_val = float(shares * np.percentile(final_prices, 25))
+        mid_val = float(shares * np.percentile(final_prices, 50))
+        high_val = float(shares * np.percentile(final_prices, 75))
+        bull_val = float(shares * np.percentile(final_prices, 90))
+
+        prob_profit = float(np.mean(final_values > amount) * 100)
+        prob_10pct = float(np.mean(final_values > amount * 1.10) * 100)
+        prob_loss_10pct = float(np.mean(final_values < amount * 0.90) * 100)
+
+        max_gain = float(np.max(final_values) - amount)
+        max_loss = float(np.min(final_values) - amount)
+        avg_outcome = float(np.mean(final_values))
+
+        # Build chart data: 60 days history + 60 days simulation
+        hist_dates = [d.strftime('%Y-%m-%d') for d in close.tail(60).index]
+        hist_values = [round(float(v) * (amount / price_60d), 2) for v in close.tail(60).values]
+
+        # Future dates
+        from datetime import timedelta
+        last_date = close.index[-1]
+        future_dates = [(last_date + timedelta(days=i+1)).strftime('%Y-%m-%d') for i in range(n_days)]
+
+        sim_bear = [round(float(np.percentile(sims[:, t], 10)) * shares, 2) for t in range(n_days)]
+        sim_mid = [round(float(np.percentile(sims[:, t], 50)) * shares, 2) for t in range(n_days)]
+        sim_bull = [round(float(np.percentile(sims[:, t], 90)) * shares, 2) for t in range(n_days)]
+
+        result = {
+            'ticker': ticker,
+            'amount': amount,
+            'price': round(last, 2),
+            'shares': round(shares, 4),
+            # Historical
+            'hist_60d_gain': round(gain_60d, 2),
+            'hist_60d_pct': round(gain_pct_60d, 2),
+            'hist_1y_gain': round(gain_1y, 2),
+            'hist_1y_pct': round(gain_pct_1y, 2),
+            # Forward 60-day projections
+            'bear': round(bear_val, 2),
+            'low': round(low_val, 2),
+            'mid': round(mid_val, 2),
+            'high': round(high_val, 2),
+            'bull': round(bull_val, 2),
+            'avg': round(avg_outcome, 2),
+            'prob_profit': round(prob_profit, 1),
+            'prob_10pct': round(prob_10pct, 1),
+            'prob_loss_10pct': round(prob_loss_10pct, 1),
+            'max_gain': round(max_gain, 2),
+            'max_loss': round(max_loss, 2),
+            # Chart data
+            'hist_dates': hist_dates,
+            'hist_values': hist_values,
+            'future_dates': future_dates,
+            'sim_bear': sim_bear,
+            'sim_mid': sim_mid,
+            'sim_bull': sim_bull,
+        }
+        cache_set(cache_key, result)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/live')
