@@ -229,9 +229,9 @@
     <div class="share-bar">
         <div class="share-left">
             <span class="share-label">Share this dashboard:</span>
-            <div class="share-url-box">
-                <input type="text" id="share-url" value="" readonly onclick="this.select()">
-                <button onclick="copyLink(this)">Copy</button>
+            <div class="share-url-box" onclick="copyLink(this)" style="cursor:pointer" title="Click to copy">
+                <input type="text" id="share-url" value="" readonly style="cursor:pointer">
+                <span class="copy-status" style="font-size:0.7rem;color:var(--muted);white-space:nowrap">Click to copy</span>
             </div>
         </div>
         <div class="share-btns">
@@ -334,12 +334,14 @@ function go(t) { document.getElementById('ticker').value = t; runAnalysis(); }
 function showLoad(msg) { document.getElementById('load-text').textContent = msg; document.getElementById('loading').classList.add('show'); }
 function hideLoad() { document.getElementById('loading').classList.remove('show'); }
 
-function copyLink(btn) {
+function copyLink(box) {
     const url = document.getElementById('share-url').value;
     navigator.clipboard.writeText(url).then(() => {
-        btn.textContent = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+        const status = box.querySelector('.copy-status');
+        status.textContent = 'Copied!';
+        status.style.color = 'var(--green)';
+        box.style.borderColor = 'var(--green)';
+        setTimeout(() => { status.textContent = 'Click to copy'; status.style.color = 'var(--muted)'; box.style.borderColor = 'var(--border)'; }, 2000);
     });
 }
 
